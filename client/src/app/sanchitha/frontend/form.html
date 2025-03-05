@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title> html form</title>
+
+    </head>
+    <body>
+            <h1>HTML Forms</h1>
+
+            <form>
+                <label for = "username">Enter the username :</label>
+                <input type = "text" id="username" name="username" placeholder="username" required>
+                <br><br>
+                <lable for="email">Enter the email : </lable>
+                <input type="email" id="email" name="email" placeholder="email" required>
+                <br><br>
+                <lable for="password">Enter the password : </lable>
+                <input type="password" id="password" name="password" placeholder="password" required>
+
+                <p>Select your age </p>
+
+                <input type="radio" name="age" value="0-25" id="optio-1">
+                <label for="optio-1">0-25</label>
+                <input type="radio" name="age" value="26-50" id="optio-2">
+                <label for="optio-2">26-50</label>
+                <input type="radio" name="age" value="51+" id="optio-3">
+                <label for="optio-3">50+</label>
+
+                <br><br>
+
+                <label for="question">Sequrity questions</label>
+                <select name="question" id="question">
+                    <option value="q1">what is your fav color</option>
+                    <option value="q2">what is your fav food</option>
+                    <option value="q3">what is your fav animal</option>
+                </select>
+
+                <br><br>
+
+                <label for="answer">sequrity question answers : </label>
+                <input type="text" name ="answer "id="answer">
+            
+                <br><br>
+                
+                <label for="bio">bio details : </label><br>
+                <textarea name="bio" id="bio" cols="30" rows="10" placeholder="about you....."></textarea>
+                <br>
+                <small><p>maximun 300 words</p></small>
+
+                <br><br>
+
+                <input type="submit" value="Submit the form">
+                
+                
+            </form>
+    </body>
+</html>
