@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Learning HTML</title>
+    </head>
+    <body>
+
+        <div class="div">
+        <p>Hello ,<strong>world</strong></p>
+        <p>my <small>first</small> web <em>page!</em></p>
+        </div>
+
+        <div class="div">
+            <a href="https://www.youtube.com/"> move to youtube</a>
+        </div>
+
+        <a href="about.html">aboutus page</a>
+
+
+        <div class="div">
+        <h1>heading 1 </h1>
+        <h2>heading 1</h2>
+        <h3>heading 1</h3>
+        <h4>heading 1</h4>
+        </div>
+
+        <div class="div">
+        <ul>
+            <li>hbvhdv</li>
+            <li>jibefhbf</li>
+            <li>uhfroijjgoiruhg</li>
+        </ul>
+        </div>
+
+
+        <ol>
+            <li>hbvhdv</li>
+            <li>jibefhbf</li>
+            <li>uhfroijjgoiruhg</li>
+        </ol>
+
+        <span>i am a <br> span tags</span>
+
+        <hr>
+
+        <img src ="images/images (7).png" alt="this image is a calander">
+        <hr>
+        <blockquote cite="http://www.oscarwildesite.com">we are all in the gutter, but sopm,e of us are ;lokking aty the star</blockquote>
+        <p style="color: blue;"> style me now</p>
+    </body>
+</html>
