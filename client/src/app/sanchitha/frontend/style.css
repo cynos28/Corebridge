@@ -16,3 +16,74 @@ div p{
 p{
     color: blue;
 }
+
+header{
+    background-color: red;
+    padding: 20px;
+    text-align: center;
+    position: fixed;
+    width: 100%;
+    z-index: 1;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 50px;
+
+}
+
+header h1{
+    color: white;
+    border: 6px solid white;
+    padding: 6px 12px;
+    display: inline-block;
+    border-radius: 10px;
+    margin-top: 1px;
+}
+
+.banner{
+    position: relative;   
+    top: 0;
+}
+.banner img{
+    max-width: 100%;
+}
+
+.banner .welcome{
+    background-color: rgb(224, 38, 13);
+    color: white;
+    padding: 20px;
+    position: absolute;
+    left: 70%;
+    top: 30%; 
+    opacity: 60% ;
+}
+.banner h2{
+    font-size: 60px;
+}
+
+.banner h2 span{
+    font-size: 90px;
+}
+
+nav{
+    background-color: antiquewhite;
+    padding: 20px;
+}
+
+nav ul{
+    white-space: nowrap;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+nav li{
+    width: 25%;
+    display: inline-block;
+    font-size: 24px;
+}
+
+nav li a{
+    text-decoration: none;
+    color: #4b4b4b;
+    
+}
