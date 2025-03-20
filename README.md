@@ -1,2 +1,3 @@
-# Corebridge - Multi-Tenant System
-CoreBridge, is designed to manage multiple companies  from a single platform. Each company has its own manager, employees, and  data, while the business owner and admin can oversee all companies.
+# CoreBridge - School Management System
+
+CoreBridge is a comprehensive school management system designed to streamline administrative and academic processes. Built using modern web technologies, it includes features such as student enrollment, attendance tracking, timetable scheduling, exam management, and teacher-student communication. The system enhances efficiency by automating routine tasks, ensuring secure data management, and providing user-friendly dashboards for administrators, teachers, students, and parents.
