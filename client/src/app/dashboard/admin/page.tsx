@@ -1,5 +1,7 @@
 import AttendanceChart from "@/app/component/AttendanceChart";
 import CountCharts from "@/app/component/CountCharts";
+import EventCalendar from "@/app/component/EventCalendar";
+import FinanceChart from "@/app/component/FinanceChart";
 import UserCard from "@/app/component/UserCard";
 
 const AdminPage = () => {
@@ -31,6 +33,7 @@ const AdminPage = () => {
           {/* BOTTOM CHART */}
           <div className="w-full h-[500px]">
             {/* Additional content for bottom chart can go here */}
+            <FinanceChart />
           </div>
         </div>
       </div>
@@ -38,6 +41,8 @@ const AdminPage = () => {
       {/* RIGHT SECTION */}
       <div className="w-full lg:w-1/3 flex flex-col gap-8 bg-gray-100 rounded-lg">
         {/* Add content for the right section here */}
+        <EventCalendar />
+        
       </div>
     </div>
   );
