@@ -1,7 +1,7 @@
-import FormModal from "@/app/dashboard/component/FormModal";
-import Pagination from "@/app/dashboard/component/Pagination";
-import Table from "@/app/dashboard/component/Table";
-import TableSearch from "@/app/dashboard/component/TableSearch";
+import FormModal from "@/app/component/FormModal";
+import Pagination from "@/app/component/Pagination";
+import Table from "@/app/component/Table";
+import TableSearch from "@/app/component/TableSearch";
 import { role, teachersData } from "@/lib/data";
 import Image from "next/image";
 import Link from "next/link";

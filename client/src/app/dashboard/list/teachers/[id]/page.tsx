@@ -1,7 +1,7 @@
-import Announcements from "@/app/dashboard/component/Announcement";
-import BigCalendar from "@/app/dashboard/component/BigCalendar";
-import FormModal from "@/app/dashboard/component/FormModal";
-import Performance from "@/app/dashboard/component/Performance";
+import Announcements from "@/app/component/Announcement";
+import BigCalendar from "@/app/component/BigCalendar";
+import FormModal from "@/app/component/FormModal";
+import Performance from "@/app/component/Performance";
 import { role } from "@/lib/data";
 import Image from "next/image";
 import Link from "next/link";
