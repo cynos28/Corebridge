@@ -23,10 +23,12 @@ const BigCalendar = () => {
       endAccessor="end"
       views={["work_week", "day"]}
       view={view}
-      style={{ height: ["98%"] }}
+      defaultDate={new Date(2024, 7, 12)} // sets the calendar to show August 12, 2024
+      style={{ height: "98%" }}
       onView={handleOnChangeView}
-      min={new Date(2025, 1, 0, 8, 0, 0)}
-      max={new Date(2025, 1, 0, 17, 0, 0)}
+      // Using dummy dates for time boundaries; only the time is considered.
+      min={new Date(2024, 1, 1, 8, 0, 0)}
+      max={new Date(2024, 1, 1, 17, 0, 0)}
     />
   );
 };
