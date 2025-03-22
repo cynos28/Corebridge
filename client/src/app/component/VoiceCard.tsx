@@ -38,7 +38,7 @@ export default function VoiceCard() {
       <CardHeader className="pb-4">
         <CardTitle className="text-xl font-semibold flex items-center gap-3">
           <Video className="h-6 w-6 text-purple-500" />
-          Create Google Meeting
+          Create Video Meeting
         </CardTitle>
         <CardDescription className="mt-2 text-sm text-muted-foreground">
           Schedule a virtual meeting with students or colleagues using voice commands

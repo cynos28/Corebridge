@@ -84,21 +84,60 @@ export default function Schedule({ open, onClose }: ScheduleProps) {
     }
   };
 
-  // Generate a meeting link based on form data
-  const generateMeetingLink = () => {
-    // Create a unique ID for the meeting
-    const meetingId = Math.random().toString(36).substring(2, 12);
+  // Function to create a room via Daily.co API
+  const createDailyRoom = async () => {
+    try {
+      // Calculate expiration time (e.g., 1 hour after meeting end time)
+      const expirationTime = Math.floor(new Date(endDate).getTime() / 1000) + 3600;
+      
+      // Format event name for room name
+      const roomName = eventName.replace(/\s+/g, '-').toLowerCase() + '-' + Math.random().toString(36).substring(2, 7);
+      
+      // Create body for API request
+      const roomData = {
+        name: roomName,
+        properties: {
+          exp: expirationTime,
+          enable_screenshare: true,
+          enable_chat: true,
+          start_video_off: false,
+          start_audio_off: false,
+          owner_only_broadcast: false
+        }
+      };
+      
+      // Make API request to create a room
+      // NOTE: In a real application, this API request should be made from your backend
+      // to protect your API key
+      const response = await fetch('https://api.daily.co/v1/rooms', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_DAILY_API_KEY}`
+        },
+        body: JSON.stringify(roomData)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to create meeting room: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return data.url; // Return the meeting URL
+      
+    } catch (error) {
+      console.error('Error creating Daily.co room:', error);
+      throw error;
+    }
+  };
+
+  // Alternative: Use Jitsi Meet (no API key required)
+  const createJitsiMeetingLink = () => {
+    // Create a unique meeting ID
+    const meetingId = `${eventName.replace(/\s+/g, '-').toLowerCase()}-${Date.now().toString(36)}`;
     
-    // Format the date for the URL
-    const formattedDate = format(startDate, "yyyyMMdd");
-    const formattedTime = format(startDate, "HHmm");
-    
-    // Create a URL-friendly event name
-    const encodedEventName = encodeURIComponent(eventName.replace(/\s+/g, '-').toLowerCase());
-    
-    // Generate the meeting link
-    // In a real application, this would be a link to your actual meeting service
-    return `https://meet.example.com/${formattedDate}-${formattedTime}-${encodedEventName}-${meetingId}`;
+    // Return a Jitsi Meet URL - this will work immediately
+    return `https://meet.jit.si/${meetingId}`;
   };
 
   const handleCreateMeeting = async () => {
@@ -111,12 +150,15 @@ export default function Schedule({ open, onClose }: ScheduleProps) {
       setIsLoading(true);
       setError(null);
       
-      // Add a small delay to simulate processing
-      await new Promise(resolve => setTimeout(resolve, 800));
+      // Option 1: If you have a Daily.co API key configured
+      // const link = await createDailyRoom();
       
-      // Generate the meeting link
-      const link = generateMeetingLink();
+      // Option 2: Use Jitsi Meet (works without an API key)
+      const link = createJitsiMeetingLink();
+      
       setMeetLink(link);
+      
+      // Save meeting details to your database here if needed
       
     } catch (error: any) {
       console.error("Error creating meeting:", error);
