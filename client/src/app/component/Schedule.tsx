@@ -9,6 +9,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
+// Declare type for window.gapi to fix TypeScript error
+declare global {
+  interface Window {
+    gapi: any;
+  }
+}
+
 interface ScheduleProps {
   open: boolean;
   onClose: () => void;
@@ -46,6 +53,10 @@ export default function Schedule({ open, onClose }: ScheduleProps) {
   const [isGapiLoaded, setIsGapiLoaded] = useState(false);
   const [meetLink, setMeetLink] = useState<string | null>(null);
 
+  // Google API credentials - make sure to use the correct format
+  const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+  const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
+
   // Load Google API on component mount
   useEffect(() => {
     const loadGapiAndInitialize = () => {
@@ -65,14 +76,19 @@ export default function Schedule({ open, onClose }: ScheduleProps) {
     };
 
     loadGapiAndInitialize();
+
+    // Cleanup function
+    return () => {
+      // If there's any cleanup needed for Google API
+    };
   }, []);
 
   const initializeGoogleApi = () => {
     window.gapi.load("client:auth2", () => {
       window.gapi.client
         .init({
-          apiKey: process.env.NEXT_PUBLIC_GOOGLE_API_KEY,
-          clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+          apiKey: API_KEY,
+          clientId: CLIENT_ID,
           discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest"],
           scope: "https://www.googleapis.com/auth/calendar.events",
         })
