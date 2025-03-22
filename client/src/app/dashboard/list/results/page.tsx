@@ -1,7 +1,7 @@
-import FormModal from "@/components/FormModal";
-import Pagination from "@/components/Pagination";
-import Table from "@/components/Table";
-import TableSearch from "@/components/TableSearch";
+import FormModal from "@/app/component/FormModal";
+import Pagination from "@/app/component/Pagination";
+import Table from "@/app/component/Table";
+import TableSearch from "@/app/component/TableSearch";
 import {
   resultsData,
   role,
