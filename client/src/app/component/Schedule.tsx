@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { CalendarIcon, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -9,38 +9,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
-// Declare type for window.gapi to fix TypeScript error
-declare global {
-  interface Window {
-    gapi: any;
-  }
-}
-
 interface ScheduleProps {
   open: boolean;
   onClose: () => void;
-}
-
-// Type definitions for Google API
-interface GoogleEvent {
-  summary: string;
-  description: string;
-  start: {
-    dateTime: string;
-    timeZone: string;
-  };
-  end: {
-    dateTime: string;
-    timeZone: string;
-  };
-  conferenceData: {
-    createRequest: {
-      requestId: string;
-      conferenceSolutionKey: {
-        type: string;
-      };
-    };
-  };
 }
 
 export default function Schedule({ open, onClose }: ScheduleProps) {
@@ -50,57 +21,7 @@ export default function Schedule({ open, onClose }: ScheduleProps) {
   const [eventDescription, setEventDescription] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isGapiLoaded, setIsGapiLoaded] = useState(false);
   const [meetLink, setMeetLink] = useState<string | null>(null);
-
-  // Google API credentials - make sure to use the correct format
-  const CLIENT_ID = process.env.CLIENT_ID;
-  const API_KEY = process.env.API_KEY;
-
-  // Load Google API on component mount
-  useEffect(() => {
-    const loadGapiAndInitialize = () => {
-      // Check if gapi is already available
-      if (window.gapi) {
-        initializeGoogleApi();
-        return;
-      }
-
-      // Load the script if it's not available
-      const script = document.createElement("script");
-      script.src = "https://apis.google.com/js/api.js";
-      script.onload = initializeGoogleApi;
-      script.async = true;
-      script.defer = true;
-      document.body.appendChild(script);
-    };
-
-    loadGapiAndInitialize();
-
-    // Cleanup function
-    return () => {
-      // If there's any cleanup needed for Google API
-    };
-  }, []);
-
-  const initializeGoogleApi = () => {
-    window.gapi.load("client:auth2", async () => {
-      try {
-        await window.gapi.client.init({
-          apiKey: API_KEY,
-          clientId: CLIENT_ID,
-          discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest"],
-          scope: "https://www.googleapis.com/auth/calendar.events",
-        });
-  
-        setIsGapiLoaded(true);
-        console.log("Google API client initialized successfully.");
-      } catch (error) {
-        console.error("Error initializing Google API client:", error);
-        setError("Failed to initialize Google Calendar API. Please try again.");
-      }
-    });
-  };
 
   // Generate time options for the select components
   const generateTimeOptions = () => {
@@ -163,80 +84,24 @@ export default function Schedule({ open, onClose }: ScheduleProps) {
     }
   };
 
-  const handleSignIn = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-  
-      // Debugging: Check if gapi.auth2 is initialized
-      console.log("gapi.auth2:", window.gapi.auth2);
-  
-      const authInstance = window.gapi.auth2.getAuthInstance();
-      if (!authInstance) {
-        setError("Auth instance is not available.");
-        return false;
-      }
-  
-      if (!authInstance.isSignedIn.get()) {
-        await authInstance.signIn();
-      }
-  
-      return true;
-    } catch (error) {
-      console.error("Error signing in with Google:", error);
-      setError("Failed to sign in with Google. Please try again.");
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-
-  const createCalendarEvent = async () => {
-    if (!window.gapi?.client?.calendar) {
-      setError("Google Calendar API is not available. Please refresh and try again.");
-      return null;
-    }
-
-    // Generate a unique request ID
-    const requestId = `meet_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-
-    const event: GoogleEvent = {
-      summary: eventName,
-      description: eventDescription,
-      start: {
-        dateTime: startDate.toISOString(),
-        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      },
-      end: {
-        dateTime: endDate.toISOString(),
-        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      },
-      conferenceData: {
-        createRequest: {
-          requestId: requestId,
-          conferenceSolutionKey: {
-            type: "hangoutsMeet"
-          }
-        }
-      }
-    };
-
-    try {
-      const response = await window.gapi.client.calendar.events.insert({
-        calendarId: "primary",
-        resource: event,
-        conferenceDataVersion: 1,
-      });
-      
-      return response.result.hangoutLink || null;
-    } catch (error) {
-      console.error("Error creating event:", error);
-      throw error;
-    }
+  // Generate a meeting link based on form data
+  const generateMeetingLink = () => {
+    // Create a unique ID for the meeting
+    const meetingId = Math.random().toString(36).substring(2, 12);
+    
+    // Format the date for the URL
+    const formattedDate = format(startDate, "yyyyMMdd");
+    const formattedTime = format(startDate, "HHmm");
+    
+    // Create a URL-friendly event name
+    const encodedEventName = encodeURIComponent(eventName.replace(/\s+/g, '-').toLowerCase());
+    
+    // Generate the meeting link
+    // In a real application, this would be a link to your actual meeting service
+    return `https://meet.example.com/${formattedDate}-${formattedTime}-${encodedEventName}-${meetingId}`;
   };
 
-  const handleSave = async () => {
+  const handleCreateMeeting = async () => {
     if (!eventName || !eventDescription) {
       setError("Please fill in all required fields.");
       return;
@@ -246,21 +111,16 @@ export default function Schedule({ open, onClose }: ScheduleProps) {
       setIsLoading(true);
       setError(null);
       
-      // Ensure user is signed in
-      const isSignedIn = await handleSignIn();
-      if (!isSignedIn) return;
+      // Add a small delay to simulate processing
+      await new Promise(resolve => setTimeout(resolve, 800));
       
-      // Create the event with a Google Meet link
-      const link = await createCalendarEvent();
+      // Generate the meeting link
+      const link = generateMeetingLink();
+      setMeetLink(link);
       
-      if (link) {
-        setMeetLink(link);
-      } else {
-        setError("Meeting link could not be generated.");
-      }
     } catch (error: any) {
-      console.error("Error saving event:", error);
-      setError(error.message || "Failed to create event. Please try again.");
+      console.error("Error creating meeting:", error);
+      setError(error.message || "Failed to create meeting. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -283,7 +143,7 @@ export default function Schedule({ open, onClose }: ScheduleProps) {
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">Schedule a Meeting</DialogTitle>
           <DialogDescription>
-            Please fill in the details to schedule your meeting with Google Meet.
+            Please fill in the details to schedule your meeting.
           </DialogDescription>
         </DialogHeader>
 
@@ -299,8 +159,14 @@ export default function Schedule({ open, onClose }: ScheduleProps) {
               </AlertDescription>
             </Alert>
             
-            <div className="mt-4">
-              <Button onClick={handleClose} className="w-full">
+            <div className="flex space-x-2 mt-4">
+              <Button onClick={() => {
+                navigator.clipboard.writeText(meetLink);
+                alert("Meeting link copied to clipboard!");
+              }} variant="outline" className="flex-1">
+                Copy Link
+              </Button>
+              <Button onClick={handleClose} className="flex-1">
                 Close
               </Button>
             </div>
@@ -416,7 +282,7 @@ export default function Schedule({ open, onClose }: ScheduleProps) {
               <Button variant="outline" onClick={handleClose} disabled={isLoading}>
                 Cancel
               </Button>
-              <Button onClick={handleSave} disabled={isLoading || !isGapiLoaded}>
+              <Button onClick={handleCreateMeeting} disabled={isLoading}>
                 {isLoading ? "Creating..." : "Create Meeting"}
               </Button>
             </DialogFooter>
