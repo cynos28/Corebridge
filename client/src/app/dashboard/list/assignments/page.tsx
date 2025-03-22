@@ -1,13 +1,10 @@
-
 import FormModal from "@/app/component/FormModal";
 import Pagination from "@/app/component/Pagination";
 import Table from "@/app/component/Table";
 import TableSearch from "@/app/component/TableSearch";
-import {
-  assignmentsData,
-  role,
-} from "@/lib/data";
+import { assignmentsData, role } from "@/lib/data";
 import Image from "next/image";
+import Link from "next/link";
 
 type Assignment = {
   id: number;
@@ -54,7 +51,7 @@ const AssignmentListPage = () => {
       <td className="hidden md:table-cell">{item.dueDate}</td>
       <td>
         <div className="flex items-center gap-2">
-          {role === "admin" || role === "teacher" && (
+          {(role === "admin" || role === "teacher") && (
             <>
               <FormModal table="assignment" type="update" data={item} />
               <FormModal table="assignment" type="delete" id={item.id} />
@@ -76,12 +73,14 @@ const AssignmentListPage = () => {
           <TableSearch />
           <div className="flex items-center gap-4 self-end">
             <button className="w-8 h-8 flex items-center justify-center rounded-full bg-cbYellow">
-              <Image src="/filter.png" alt="" width={14} height={14} />
+              <Image src="/filter.png" alt="Filter" width={14} height={14} />
             </button>
             <button className="w-8 h-8 flex items-center justify-center rounded-full bg-cbYellow">
-              <Image src="/sort.png" alt="" width={14} height={14} />
+              <Image src="/sort.png" alt="Sort" width={14} height={14} />
             </button>
-            {role === "admin" || role === "teacher" && <FormModal table="assignment" type="create" />}
+            {(role === "admin" || role === "teacher") && (
+              <FormModal table="assignment" type="create" />
+            )}
           </div>
         </div>
       </div>
