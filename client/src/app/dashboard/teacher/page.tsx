@@ -3,7 +3,7 @@ import BigCalendar from "@/app/component/BigCalendar";
 import EventCalendar from "@/app/component/EventCalendar";
 
 
-const ParentPage = () => {
+const TeacherPage = () => {
   return (
     <div className="flex-1 p-4 flex gap-4 flex-col xl:flex-row">
       {/* LEFT */}
@@ -22,4 +22,4 @@ const ParentPage = () => {
   );
 };
 
-export default ParentPage;
+export default TeacherPage;
