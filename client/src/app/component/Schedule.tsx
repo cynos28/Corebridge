@@ -54,8 +54,8 @@ export default function Schedule({ open, onClose }: ScheduleProps) {
   const [meetLink, setMeetLink] = useState<string | null>(null);
 
   // Google API credentials - make sure to use the correct format
-  const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-  const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
+  const CLIENT_ID = process.env.CLIENT_ID;
+  const API_KEY = process.env.API_KEY;
 
   // Load Google API on component mount
   useEffect(() => {
@@ -84,22 +84,21 @@ export default function Schedule({ open, onClose }: ScheduleProps) {
   }, []);
 
   const initializeGoogleApi = () => {
-    window.gapi.load("client:auth2", () => {
-      window.gapi.client
-        .init({
+    window.gapi.load("client:auth2", async () => {
+      try {
+        await window.gapi.client.init({
           apiKey: API_KEY,
           clientId: CLIENT_ID,
           discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest"],
           scope: "https://www.googleapis.com/auth/calendar.events",
-        })
-        .then(() => {
-          setIsGapiLoaded(true);
-          console.log("Google API client initialized successfully.");
-        })
-        .catch((error: any) => {
-          console.error("Error initializing Google API client:", error);
-          setError("Failed to initialize Google Calendar API. Please try again.");
         });
+  
+        setIsGapiLoaded(true);
+        console.log("Google API client initialized successfully.");
+      } catch (error) {
+        console.error("Error initializing Google API client:", error);
+        setError("Failed to initialize Google Calendar API. Please try again.");
+      }
     });
   };
 
@@ -168,11 +167,20 @@ export default function Schedule({ open, onClose }: ScheduleProps) {
     try {
       setIsLoading(true);
       setError(null);
-      
+  
+      // Debugging: Check if gapi.auth2 is initialized
+      console.log("gapi.auth2:", window.gapi.auth2);
+  
       const authInstance = window.gapi.auth2.getAuthInstance();
+      if (!authInstance) {
+        setError("Auth instance is not available.");
+        return false;
+      }
+  
       if (!authInstance.isSignedIn.get()) {
         await authInstance.signIn();
       }
+  
       return true;
     } catch (error) {
       console.error("Error signing in with Google:", error);
@@ -182,6 +190,7 @@ export default function Schedule({ open, onClose }: ScheduleProps) {
       setIsLoading(false);
     }
   };
+  
 
   const createCalendarEvent = async () => {
     if (!window.gapi?.client?.calendar) {
