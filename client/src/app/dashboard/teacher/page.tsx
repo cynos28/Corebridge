@@ -1,6 +1,7 @@
 import Announcement from "@/app/component/Announcement";
 import BigCalendar from "@/app/component/BigCalendar";
 import EventCalendar from "@/app/component/EventCalendar";
+import VoiceCard from "@/app/component/VoiceCard";
 
 
 const TeacherPage = () => {
@@ -17,6 +18,7 @@ const TeacherPage = () => {
       <div className="w-full xl:w-1/3 flex flex-col gap-8">
      
         <Announcement />
+        <VoiceCard />
       </div>
     </div>
   );
