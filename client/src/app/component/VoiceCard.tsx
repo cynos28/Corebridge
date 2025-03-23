@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Mic, Video, Calendar, Users } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Mic, Video, Calendar, Users, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -11,12 +11,20 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert";
 import Schedule from "./Schedule";
 
 export default function VoiceCard() {
+  // UI States
   const [isHovering, setIsHovering] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false); // For manual scheduling
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  // Meeting Data States
   const [voiceMeetingData, setVoiceMeetingData] = useState({
     eventName: "",
     eventDescription: "",
@@ -24,34 +32,60 @@ export default function VoiceCard() {
     startTime: "",
     endTime: "",
   });
-  const [voiceMeetLink, setVoiceMeetLink] = useState<string | null>(null);
-
-  // States for Google API and sign-in
+  const [voiceMeetLink, setVoiceMeetLink] = useState(null);
+  
+  // Google API States
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [isGapiLoaded, setIsGapiLoaded] = useState(false);
   const [isGsiLoaded, setIsGsiLoaded] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Google API configuration (move to environment variables in production)
-  const CLIENT_ID =
+  // Google API Configuration
+  const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || 
     "528464651880-3o57pe8bqa0q3b932tlq47td0fo0hpcu.apps.googleusercontent.com";
-  const API_KEY = "AIzaSyD72BvEfn7N5ikxzhxqBkwOj3EVB9-kwng";
-  const DISCOVERY_DOCS = [
-    "https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest",
-  ];
+  const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_API_KEY || 
+    "AIzaSyD72BvEfn7N5ikxzhxqBkwOj3EVB9-kwng";
+  const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest"];
   const SCOPES = "https://www.googleapis.com/auth/calendar.events";
 
-  // Load GAPI and GSI scripts if needed
+  // Initialize Google API client
+  const initializeGapiClient = useCallback(async () => {
+    if (!window.gapi) return;
+    
+    try {
+      await new Promise((resolve) => {
+        window.gapi.load("client", resolve);
+      });
+      
+      await window.gapi.client.init({
+        apiKey: API_KEY,
+        discoveryDocs: DISCOVERY_DOCS,
+      });
+      
+      setIsGapiLoaded(true);
+    } catch (error) {
+      console.error("Error initializing GAPI client:", error);
+      setError("Failed to initialize Google Calendar API. Please try again.");
+    }
+  }, [API_KEY]);
+
+  // Load Google API Scripts
   useEffect(() => {
+    // Check if browser supports Speech Recognition
+    const SpeechRecognition = 
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    if (!SpeechRecognition) {
+      setError("Your browser doesn't support voice commands. Try Chrome or Edge.");
+    }
+
     const loadGapiScript = () => {
       const script = document.createElement("script");
       script.src = "https://apis.google.com/js/api.js";
       script.async = true;
       script.defer = true;
-      script.onload = () => {
-        initializeGapiClient();
-      };
+      script.onload = initializeGapiClient;
       script.onerror = () => {
         console.error("Error loading GAPI script");
         setError("Failed to load Google API. Please try again later.");
@@ -64,14 +98,10 @@ export default function VoiceCard() {
       script.src = "https://accounts.google.com/gsi/client";
       script.async = true;
       script.defer = true;
-      script.onload = () => {
-        setIsGsiLoaded(true);
-      };
+      script.onload = () => setIsGsiLoaded(true);
       script.onerror = () => {
         console.error("Error loading GSI script");
-        setError(
-          "Failed to load Google Identity Services. Please try again later."
-        );
+        setError("Failed to load Google Identity Services. Please try again later.");
       };
       document.body.appendChild(script);
     };
@@ -81,43 +111,37 @@ export default function VoiceCard() {
     } else {
       initializeGapiClient();
     }
+    
     if (!window.google) {
       loadGsiScript();
     } else {
       setIsGsiLoaded(true);
     }
-  }, []);
+    
+    // Clean up on component unmount
+    return () => {
+      // Cancel any ongoing speech synthesis when component unmounts
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, [initializeGapiClient]);
 
-  const initializeGapiClient = async () => {
-    if (!window.gapi) return;
-    try {
-      await new Promise<void>((resolve) => {
-        window.gapi.load("client", resolve);
-      });
-      await window.gapi.client.init({
-        apiKey: API_KEY,
-        discoveryDocs: DISCOVERY_DOCS,
-      });
-      setIsGapiLoaded(true);
-    } catch (error) {
-      console.error("Error initializing GAPI client:", error);
-      setError("Failed to initialize Google Calendar API. Please try again.");
-    }
-  };
-
-  // Sign in using Google Identity Services
+  // Handle Google Sign In
   const handleVoiceSignIn = async () => {
     if (!isGapiLoaded || !isGsiLoaded) {
       setError("Google API not loaded yet. Please wait or refresh the page.");
       return false;
     }
+    
     try {
       setIsLoading(true);
       setError(null);
+      
       const tokenClient = window.google.accounts.oauth2.initTokenClient({
         client_id: CLIENT_ID,
         scope: SCOPES,
-        callback: (tokenResponse: any) => {
+        callback: (tokenResponse) => {
           if (tokenResponse.error !== undefined) {
             setError("Sign in failed. Please try again.");
             setIsLoading(false);
@@ -127,6 +151,7 @@ export default function VoiceCard() {
           setIsLoading(false);
         },
       });
+      
       tokenClient.requestAccessToken({ prompt: "consent" });
       return true;
     } catch (error) {
@@ -137,30 +162,107 @@ export default function VoiceCard() {
     }
   };
 
-  // Create a calendar event for the voice meeting using the collected data
-  const createVoiceCalendarEvent = async (data: {
-    eventName: string;
-    eventDescription: string;
-    meetingDate: string;
-    startTime: string;
-    endTime: string;
-  }) => {
-    if (!window.gapi?.client) {
-      alert("Google Calendar API is not available. Please refresh and try again.");
-      return;
+  // Format date from simple input like "20250325" to "2025-03-25"
+  const formatDate = (inputDate) => {
+    // If already formatted, return as is
+    if (/^\d{4}-\d{2}-\d{2}$/.test(inputDate)) {
+      return inputDate;
     }
+    
+    // Remove non-digit characters
+    const digitsOnly = inputDate.replace(/\D/g, '');
+    
+    // Handle numeric format like "20250325"
+    if (digitsOnly.length === 8) {
+      const year = digitsOnly.substring(0, 4);
+      const month = digitsOnly.substring(4, 6);
+      const day = digitsOnly.substring(6, 8);
+      return `${year}-${month}-${day}`;
+    }
+    
+    return inputDate;
+  };
+
+  // Format time from simple input like "0200" to "02:00"
+  const formatTime = (inputTime) => {
+    // If already formatted, return as is
+    if (/^\d{2}:\d{2}$/.test(inputTime)) {
+      return inputTime;
+    }
+    
+    // Remove non-digit characters
+    const digitsOnly = inputTime.replace(/\D/g, '');
+    
+    // Handle numeric format like "0200"
+    if (digitsOnly.length === 4) {
+      const hours = digitsOnly.substring(0, 2);
+      const minutes = digitsOnly.substring(2, 4);
+      return `${hours}:${minutes}`;
+    }
+    
+    // Handle shorter formats like "200" (interpret as 2:00)
+    if (digitsOnly.length === 3) {
+      const hours = digitsOnly.substring(0, 1).padStart(2, '0');
+      const minutes = digitsOnly.substring(1, 3);
+      return `${hours}:${minutes}`;
+    }
+    
+    // Handle shorter formats like "20" (interpret as 0:20)
+    if (digitsOnly.length === 2) {
+      if (parseInt(digitsOnly) < 24) {
+        return `${digitsOnly}:00`;
+      } else {
+        return `00:${digitsOnly}`;
+      }
+    }
+    
+    return inputTime;
+  };
+
+  // Create Calendar Event
+  const createVoiceCalendarEvent = async (data) => {
+    if (!window.gapi?.client) {
+      setError("Google Calendar API is not available. Please refresh and try again.");
+      return null;
+    }
+    
     try {
       if (!window.gapi.client.calendar) {
         await window.gapi.client.load("calendar", "v3");
       }
-      const requestId = `meet_${Date.now()}_${Math.random()
-        .toString(36)
-        .substring(2, 11)}`;
-      const startDate = new Date(`${data.meetingDate}T${data.startTime}:00`);
-      const endDate = new Date(`${data.meetingDate}T${data.endTime}:00`);
+      
+      const requestId = `meet_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+      
+      // Format and validate date and time
+      const formattedDate = formatDate(data.meetingDate);
+      const formattedStartTime = formatTime(data.startTime);
+      const formattedEndTime = formatTime(data.endTime);
+      
+      if (!isValidDate(formattedDate)) {
+        throw new Error(`Invalid date format: ${data.meetingDate}. Use YYYYMMDD format.`);
+      }
+      
+      if (!isValidTime(formattedStartTime) || !isValidTime(formattedEndTime)) {
+        throw new Error(`Invalid time format. Use HHMM format.`);
+      }
+      
+      // Create Date objects for validation
+      const startDate = new Date(`${formattedDate}T${formattedStartTime}:00`);
+      const endDate = new Date(`${formattedDate}T${formattedEndTime}:00`);
+      
+      // Validate that dates are valid
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        throw new Error("Failed to parse date and time values.");
+      }
+      
+      // Validate that end time is after start time
+      if (endDate <= startDate) {
+        throw new Error("End time must be after start time.");
+      }
+      
       const event = {
-        summary: data.eventName,
-        description: data.eventDescription,
+        summary: data.eventName || "New Meeting",
+        description: data.eventDescription || "",
         start: {
           dateTime: startDate.toISOString(),
           timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -178,70 +280,132 @@ export default function VoiceCard() {
           },
         },
       };
+      
       const response = await window.gapi.client.calendar.events.insert({
         calendarId: "primary",
         resource: event,
         conferenceDataVersion: 1,
       });
-      setVoiceMeetLink(response.result.hangoutLink || null);
+      
+      return response.result.hangoutLink || null;
     } catch (error) {
       console.error("Error creating voice meeting event:", error);
-      alert("Failed to create voice meeting. Please try again.");
+      throw new Error(`Failed to create meeting: ${error.message || "Unknown error"}`);
     }
   };
 
-  // Helper that uses the Web Speech API to speak a question and then listen for the answer
-  const askVoiceQuestion = (question: string): Promise<string> => {
+  // Validation helpers
+  const isValidDate = (dateString) => {
+    // Validate YYYY-MM-DD format
+    const regex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!regex.test(dateString)) return false;
+    
+    const date = new Date(dateString);
+    return date instanceof Date && !isNaN(date);
+  };
+  
+  const isValidTime = (timeString) => {
+    // Validate HH:MM format
+    const regex = /^([01]\d|2[0-3]):([0-5]\d)$/;
+    return regex.test(timeString);
+  };
+
+  // Process voice input for dates
+  const processDateInput = (input) => {
+    // Remove spaces and non-alphanumeric characters
+    const processed = input.trim().replace(/[^\w\s]/g, '');
+    
+    // Try to extract a date pattern (YYYYMMDD or YYYYMM or similar)
+    const dateMatch = processed.match(/\b(\d{8}|\d{6})\b/);
+    if (dateMatch) {
+      return formatDate(dateMatch[0]);
+    }
+    
+    // Try to match words that might indicate today/tomorrow/etc
+    if (/\b(today|now)\b/i.test(processed)) {
+      const today = new Date();
+      return formatDate(
+        `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`
+      );
+    }
+    
+    if (/\b(tomorrow)\b/i.test(processed)) {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      return formatDate(
+        `${tomorrow.getFullYear()}${String(tomorrow.getMonth() + 1).padStart(2, '0')}${String(tomorrow.getDate()).padStart(2, '0')}`
+      );
+    }
+    
+    return processed;
+  };
+
+  // Process voice input for times
+  const processTimeInput = (input) => {
+    // Remove spaces and non-alphanumeric characters
+    const processed = input.trim().replace(/[^\w\s]/g, '');
+    
+    // Try to extract a time pattern (HHMM or HMM)
+    const timeMatch = processed.match(/\b(\d{4}|\d{3}|\d{2})\b/);
+    if (timeMatch) {
+      return formatTime(timeMatch[0]);
+    }
+    
+    return processed;
+  };
+
+  // Voice interaction functions
+  const askVoiceQuestion = (question) => {
     return new Promise((resolve, reject) => {
-      // Use SpeechSynthesis to speak out the question
       const synth = window.speechSynthesis;
       const utterance = new SpeechSynthesisUtterance(question);
+      
       utterance.onend = () => {
-        // Once speaking is finished, use SpeechRecognition to capture your answer
-        const SpeechRecognition =
-          (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        const SpeechRecognition = 
+          window.SpeechRecognition || window.webkitSpeechRecognition;
+          
         if (!SpeechRecognition) {
           reject("Browser does not support Speech Recognition.");
           return;
         }
+        
         const recognition = new SpeechRecognition();
         recognition.lang = "en-US";
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
-        recognition.onresult = (event: any) => {
-          // The captured answer is available as the transcript
+        
+        recognition.onresult = (event) => {
           const transcript = event.results[0][0].transcript;
           resolve(transcript);
         };
-        recognition.onerror = (event: any) => {
+        
+        recognition.onerror = (event) => {
           reject(event.error);
         };
+        
         recognition.start();
       };
+      
       synth.speak(utterance);
     });
   };
-  
 
-  // This function runs the voice meeting flow:
-  // It asks a series of questions and collects the user’s responses.
+  // Start the voice meeting flow
   const startVoiceMeeting = async () => {
     if (!isSignedIn) {
       const signedIn = await handleVoiceSignIn();
       if (!signedIn) {
-        alert("You need to sign in with Google to create a meeting.");
+        setError("You need to sign in with Google to create a meeting.");
         return;
       }
     }
+    
     try {
       setIsListening(true);
-      const responses: {
-        eventName: string;
-        eventDescription: string;
-        meetingDate: string;
-        startTime: string;
-        endTime: string;
-      } = {
+      setError(null);
+      
+      // Create a skeleton for meeting data
+      const responses = {
         eventName: "",
         eventDescription: "",
         meetingDate: "",
@@ -249,39 +413,84 @@ export default function VoiceCard() {
         endTime: "",
       };
 
-      responses.eventName = await askVoiceQuestion(
-        "What is the title of your meeting?"
-      );
+      // Get meeting details from voice
+      responses.eventName = await askVoiceQuestion("What is the title of your meeting?");
+      
       responses.eventDescription = await askVoiceQuestion(
         "Please provide a brief description for your meeting."
       );
-      responses.meetingDate = await askVoiceQuestion(
-        "What is the meeting date? Please answer in the format YYYY-MM-DD."
-      );
-      responses.startTime = await askVoiceQuestion(
-        "What is the start time for the meeting? Please answer in HH:MM format."
-      );
-      responses.endTime = await askVoiceQuestion(
-        "What is the end time for the meeting? Please answer in HH:MM format."
-      );
-
+      
+      // Get date (supports formats like 20250325)
+      let dateResponse;
+      do {
+        dateResponse = await askVoiceQuestion(
+          "What is the meeting date? You can say a date like 20250325 for March 25, 2025."
+        );
+        
+        dateResponse = processDateInput(dateResponse);
+      } while (!isValidDate(dateResponse));
+      
+      responses.meetingDate = dateResponse;
+      
+      // Get start time (supports formats like 0200)
+      let timeResponse;
+      do {
+        timeResponse = await askVoiceQuestion(
+          "What is the start time? You can say a time like 0200 for 2:00 AM."
+        );
+        
+        timeResponse = processTimeInput(timeResponse);
+      } while (!isValidTime(timeResponse));
+      
+      responses.startTime = timeResponse;
+      
+      // Get end time (supports formats like 0200)
+      do {
+        timeResponse = await askVoiceQuestion(
+          "What is the end time? You can say a time like 0330 for 3:30 AM."
+        );
+        
+        timeResponse = processTimeInput(timeResponse);
+      } while (!isValidTime(timeResponse));
+      
+      responses.endTime = timeResponse;
+      
       setVoiceMeetingData(responses);
-      await createVoiceCalendarEvent(responses);
-      setIsListening(false);
-    } catch (error: any) {
+
+      // Format for display
+      const displayDate = new Date(responses.meetingDate).toLocaleDateString();
+      const displayStartTime = new Date(`2000-01-01T${responses.startTime}`).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+      const displayEndTime = new Date(`2000-01-01T${responses.endTime}`).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+      
+      // Ask for confirmation
+      const confirmationText = `I'm about to create a meeting titled "${responses.eventName}" on ${displayDate} from ${displayStartTime} to ${displayEndTime}. Should I create this meeting?`;
+      
+      const confirmation = await askVoiceQuestion(confirmationText);
+      
+      if (/yes|yeah|yep|correct|confirm|create it|sure/i.test(confirmation)) {
+        const meetLink = await createVoiceCalendarEvent(responses);
+        setVoiceMeetLink(meetLink);
+        
+        // Provide voice feedback on success
+        const synth = window.speechSynthesis;
+        const successUtterance = new SpeechSynthesisUtterance(
+          "Your meeting has been created successfully!"
+        );
+        synth.speak(successUtterance);
+      } else {
+        setError("Meeting creation cancelled.");
+      }
+    } catch (error) {
       console.error("Voice meeting error:", error);
-      alert("An error occurred during voice meeting: " + error);
+      setError(error.message || "An error occurred during voice meeting setup.");
+    } finally {
       setIsListening(false);
     }
   };
 
-  const openModal = () => {
-    setIsModalOpen(true);
-  };
-
-  const closeModal = () => {
-    setIsModalOpen(false);
-  };
+  // Modal functions
+  const openModal = () => setIsModalOpen(true);
+  const closeModal = () => setIsModalOpen(false);
 
   return (
     <>
@@ -311,9 +520,16 @@ export default function VoiceCard() {
               <span>Up to 100 participants</span>
             </div>
           </div>
+          
+          {error && (
+            <Alert variant="destructive" className="mt-4">
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
         </CardContent>
 
-        <CardFooter className="pt-4 flex justify-between items-center">
+        <CardFooter className="pt-4 flex flex-wrap justify-between items-center gap-3">
           <Button
             className={`gap-3 px-5 py-2 ${
               isHovering
@@ -323,18 +539,27 @@ export default function VoiceCard() {
             onClick={startVoiceMeeting}
             disabled={isListening || isLoading}
           >
-            <Mic className="h-4 w-4" />
-            {isListening ? "Listening..." : "Start Meeting Now"}
+            {isListening || isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Mic className="h-4 w-4" />
+            )}
+            {isListening ? "Listening..." : isLoading ? "Loading..." : "Start Meeting Now"}
           </Button>
-          <Button variant="outline" className="ml-3 px-5 py-2" onClick={openModal}>
+          <Button 
+            variant="outline" 
+            className="px-5 py-2" 
+            onClick={openModal}
+            disabled={isLoading}
+          >
             Schedule
           </Button>
         </CardFooter>
 
         {voiceMeetLink && (
           <div className="mt-4 p-4 bg-green-100 rounded">
-            <p>Your Google Meet has been created successfully!</p>
-            <p>
+            <p className="font-semibold text-green-800 mb-2">Your Google Meet has been created successfully!</p>
+            <p className="mb-1">
               <strong>Meet Link:</strong>
             </p>
             <a
@@ -345,11 +570,24 @@ export default function VoiceCard() {
             >
               {voiceMeetLink}
             </a>
-            <p>The meeting has been added to your Google Calendar.</p>
+            <p className="mt-2 text-sm text-green-700">
+              The meeting has been added to your Google Calendar.
+            </p>
           </div>
         )}
       </Card>
-      {isModalOpen && <Schedule open={isModalOpen} onClose={closeModal} />}
+      
+      {isModalOpen && (
+        <Schedule 
+          open={isModalOpen} 
+          onClose={closeModal} 
+          isSignedIn={isSignedIn}
+          onSignIn={handleVoiceSignIn}
+          createCalendarEvent={createVoiceCalendarEvent}
+          formatDate={formatDate}
+          formatTime={formatTime}
+        />
+      )}
     </>
   );
 }
