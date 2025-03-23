@@ -1,31 +1,292 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CalendarIcon, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+
+declare global {
+  interface Window {
+    google: any;
+    gapi: any;
+  }
+}
 
 interface ScheduleProps {
   open: boolean;
   onClose: () => void;
 }
 
+interface GoogleEvent {
+  summary: string;
+  description: string;
+  start: {
+    dateTime: string;
+    timeZone: string;
+  };
+  end: {
+    dateTime: string;
+    timeZone: string;
+  };
+  conferenceData: {
+    createRequest: {
+      requestId: string;
+      conferenceSolutionKey: {
+        type: string;
+      };
+    };
+  };
+}
+
 export default function Schedule({ open, onClose }: ScheduleProps) {
   const [startDate, setStartDate] = useState<Date>(new Date());
-  const [endDate, setEndDate] = useState<Date>(new Date(new Date().getTime() + 30 * 60000)); // Default to 30 min later
+  const [endDate, setEndDate] = useState<Date>(new Date(new Date().getTime() + 30 * 60000));
   const [eventName, setEventName] = useState("");
   const [eventDescription, setEventDescription] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isGapiLoaded, setIsGapiLoaded] = useState(false);
+  const [isGsiLoaded, setIsGsiLoaded] = useState(false);
+  const [isSignedIn, setIsSignedIn] = useState(false);
   const [meetLink, setMeetLink] = useState<string | null>(null);
 
-  // Generate time options for the select components
+  // Move these to environment variables in production
+  // Note: You should secure these in production environments
+  const CLIENT_ID = "528464651880-3o57pe8bqa0q3b932tlq47td0fo0hpcu.apps.googleusercontent.com";
+  const API_KEY = "AIzaSyD72BvEfn7N5ikxzhxqBkwOj3EVB9-kwng";
+  const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest"];
+  const SCOPES = "https://www.googleapis.com/auth/calendar.events";
+
+  // Load the Google API Client Libraries
+  useEffect(() => {
+    // Load the Google API Client
+    const loadGapiScript = () => {
+      const script = document.createElement("script");
+      script.src = "https://apis.google.com/js/api.js";
+      script.async = true;
+      script.defer = true;
+      script.onload = () => {
+        console.log("GAPI script loaded");
+        initializeGapiClient();
+      };
+      script.onerror = () => {
+        console.error("Error loading GAPI script");
+        setError("Failed to load Google API. Please try again later.");
+      };
+      document.body.appendChild(script);
+    };
+
+    // Load the Google Identity Services
+    const loadGsiScript = () => {
+      const script = document.createElement("script");
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true;
+      script.defer = true;
+      script.onload = () => {
+        console.log("GSI script loaded");
+        setIsGsiLoaded(true);
+      };
+      script.onerror = () => {
+        console.error("Error loading GSI script");
+        setError("Failed to load Google Identity Services. Please try again later.");
+      };
+      document.body.appendChild(script);
+    };
+
+    if (!window.gapi) {
+      loadGapiScript();
+    } else {
+      initializeGapiClient();
+    }
+
+    if (!window.google) {
+      loadGsiScript();
+    } else {
+      setIsGsiLoaded(true);
+    }
+  }, []);
+
+  const initializeGapiClient = async () => {
+    if (!window.gapi) return;
+    
+    try {
+      await new Promise<void>((resolve) => {
+        window.gapi.load("client", resolve);
+      });
+
+      await window.gapi.client.init({
+        apiKey: API_KEY,
+        discoveryDocs: DISCOVERY_DOCS,
+      });
+
+      console.log("GAPI client initialized");
+      setIsGapiLoaded(true);
+    } catch (error) {
+      console.error("Error initializing GAPI client:", error);
+      setError("Failed to initialize Google Calendar API. Please try again.");
+    }
+  };
+
+  // Handle Google Sign-in
+  const handleSignIn = async () => {
+    if (!isGapiLoaded || !isGsiLoaded) {
+      setError("Google API not loaded yet. Please wait or refresh the page.");
+      return false;
+    }
+
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const tokenClient = window.google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: SCOPES,
+        callback: (tokenResponse: any) => {
+          if (tokenResponse.error !== undefined) {
+            setError("Sign in failed. Please try again.");
+            setIsLoading(false);
+            return;
+          }
+          setIsSignedIn(true);
+          setIsLoading(false);
+        },
+      });
+
+      // Request an access token
+      tokenClient.requestAccessToken({ prompt: "consent" });
+      return true;
+    } catch (error) {
+      console.error("Error signing in:", error);
+      setError("Failed to sign in with Google. Please try again.");
+      setIsLoading(false);
+      return false;
+    }
+  };
+
+  const handleSignOut = () => {
+    if (window.google?.accounts?.oauth2) {
+      // Revoke token
+      const token = window.gapi.client.getToken();
+      if (token !== null) {
+        window.google.accounts.oauth2.revoke(token.access_token);
+        window.gapi.client.setToken(null);
+        setIsSignedIn(false);
+        setMeetLink(null);
+      }
+    }
+  };
+
+  const createCalendarEventWithMeet = async () => {
+    if (!window.gapi?.client) {
+      setError("Google Calendar API is not available. Please refresh and try again.");
+      return null;
+    }
+
+    try {
+      // Load the calendar API if not already loaded
+      if (!window.gapi.client.calendar) {
+        await window.gapi.client.load("calendar", "v3");
+      }
+
+      const requestId = `meet_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+
+      const event: GoogleEvent = {
+        summary: eventName,
+        description: eventDescription,
+        start: {
+          dateTime: startDate.toISOString(),
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        },
+        end: {
+          dateTime: endDate.toISOString(),
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        },
+        conferenceData: {
+          createRequest: {
+            requestId: requestId,
+            conferenceSolutionKey: {
+              type: "hangoutsMeet",
+            },
+          },
+        },
+      };
+
+      const response = await window.gapi.client.calendar.events.insert({
+        calendarId: "primary",
+        resource: event,
+        conferenceDataVersion: 1,
+      });
+
+      return response.result.hangoutLink || null;
+    } catch (error) {
+      console.error("Error creating event:", error);
+      setError(`Failed to create Google Meet: ${(error as any).message || "Unknown error"}`);
+      return null;
+    }
+  };
+
+  const handleCreateMeeting = async () => {
+    if (!eventName || !eventDescription) {
+      setError("Please fill in all required fields.");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      if (!isSignedIn) {
+        const signedInSuccessfully = await handleSignIn();
+        if (!signedInSuccessfully) {
+          setError("You need to sign in with Google to create a meeting.");
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      const link = await createCalendarEventWithMeet();
+      if (link) {
+        setMeetLink(link);
+      } else {
+        setError("Meeting link could not be generated. Please try again.");
+      }
+    } catch (error) {
+      console.error("Failed to create meeting:", error);
+      setError(`Failed to create meeting: ${(error as any).message || "Please try again."}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleClose = () => {
+    setEventName("");
+    setEventDescription("");
+    setStartDate(new Date());
+    setEndDate(new Date(new Date().getTime() + 30 * 60000));
+    setError(null);
+    setMeetLink(null);
+    onClose();
+  };
+
   const generateTimeOptions = () => {
-    const options = [];
+    const options: { value: string; label: string }[] = [];
     for (let hour = 0; hour < 24; hour++) {
       for (let minute = 0; minute < 60; minute += 30) {
         const time = new Date();
@@ -39,8 +300,6 @@ export default function Schedule({ open, onClose }: ScheduleProps) {
     return options;
   };
 
-  const timeOptions = generateTimeOptions();
-
   const handleDateChange = (date: Date | null, isStart: boolean) => {
     if (!date) return;
 
@@ -49,8 +308,7 @@ export default function Schedule({ open, onClose }: ScheduleProps) {
       const currentStart = startDate;
       newDate.setHours(currentStart.getHours(), currentStart.getMinutes());
       setStartDate(newDate);
-      
-      // If end date is before start date, update it
+
       if (newDate > endDate) {
         const newEndDate = new Date(newDate);
         newEndDate.setMinutes(newEndDate.getMinutes() + 30);
@@ -65,13 +323,12 @@ export default function Schedule({ open, onClose }: ScheduleProps) {
 
   const handleTimeChange = (time: string, isStart: boolean) => {
     const [hours, minutes] = time.split(":").map(Number);
-    
+
     if (isStart) {
       const newDate = new Date(startDate);
       newDate.setHours(hours, minutes);
       setStartDate(newDate);
-      
-      // If end time is before start time, update it
+
       if (newDate >= endDate) {
         const newEndDate = new Date(newDate);
         newEndDate.setMinutes(newEndDate.getMinutes() + 30);
@@ -84,108 +341,15 @@ export default function Schedule({ open, onClose }: ScheduleProps) {
     }
   };
 
-  // Function to create a room via Daily.co API
-  const createDailyRoom = async () => {
-    try {
-      // Calculate expiration time (e.g., 1 hour after meeting end time)
-      const expirationTime = Math.floor(new Date(endDate).getTime() / 1000) + 3600;
-      
-      // Format event name for room name
-      const roomName = eventName.replace(/\s+/g, '-').toLowerCase() + '-' + Math.random().toString(36).substring(2, 7);
-      
-      // Create body for API request
-      const roomData = {
-        name: roomName,
-        properties: {
-          exp: expirationTime,
-          enable_screenshare: true,
-          enable_chat: true,
-          start_video_off: false,
-          start_audio_off: false,
-          owner_only_broadcast: false
-        }
-      };
-      
-      // Make API request to create a room
-      // NOTE: In a real application, this API request should be made from your backend
-      // to protect your API key
-      const response = await fetch('https://api.daily.co/v1/rooms', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_DAILY_API_KEY}`
-        },
-        body: JSON.stringify(roomData)
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to create meeting room: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      return data.url; // Return the meeting URL
-      
-    } catch (error) {
-      console.error('Error creating Daily.co room:', error);
-      throw error;
-    }
-  };
-
-  // Alternative: Use Jitsi Meet (no API key required)
-  const createJitsiMeetingLink = () => {
-    // Create a unique meeting ID
-    const meetingId = `${eventName.replace(/\s+/g, '-').toLowerCase()}-${Date.now().toString(36)}`;
-    
-    // Return a Jitsi Meet URL - this will work immediately
-    return `https://meet.jit.si/${meetingId}`;
-  };
-
-  const handleCreateMeeting = async () => {
-    if (!eventName || !eventDescription) {
-      setError("Please fill in all required fields.");
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      // Option 1: If you have a Daily.co API key configured
-      // const link = await createDailyRoom();
-      
-      // Option 2: Use Jitsi Meet (works without an API key)
-      const link = createJitsiMeetingLink();
-      
-      setMeetLink(link);
-      
-      // Save meeting details to your database here if needed
-      
-    } catch (error: any) {
-      console.error("Error creating meeting:", error);
-      setError(error.message || "Failed to create meeting. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleClose = () => {
-    // Reset form state
-    setEventName("");
-    setEventDescription("");
-    setStartDate(new Date());
-    setEndDate(new Date(new Date().getTime() + 30 * 60000));
-    setError(null);
-    setMeetLink(null);
-    onClose();
-  };
-
   return (
     <Dialog open={open} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle className="text-xl font-semibold">Schedule a Meeting</DialogTitle>
+          <DialogTitle className="text-xl font-semibold">Schedule Google Meet</DialogTitle>
           <DialogDescription>
-            Please fill in the details to schedule your meeting.
+            {isSignedIn
+              ? "Fill in the details to create a Google Meet conference."
+              : "Sign in with Google to create a meeting."}
           </DialogDescription>
         </DialogHeader>
 
@@ -193,61 +357,66 @@ export default function Schedule({ open, onClose }: ScheduleProps) {
           <div className="space-y-4 py-2">
             <Alert>
               <AlertDescription>
-                <p className="mb-2">Your meeting has been created successfully!</p>
-                <p className="mb-2"><strong>Meet Link:</strong></p>
+                <p>Your Google Meet has been created successfully!</p>
+                <p><strong>Meet Link:</strong></p>
                 <a href={meetLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline break-all">
                   {meetLink}
                 </a>
+                <p>The meeting has been added to your Google Calendar.</p>
               </AlertDescription>
             </Alert>
-            
-            <div className="flex space-x-2 mt-4">
-              <Button onClick={() => {
-                navigator.clipboard.writeText(meetLink);
-                alert("Meeting link copied to clipboard!");
-              }} variant="outline" className="flex-1">
-                Copy Link
-              </Button>
-              <Button onClick={handleClose} className="flex-1">
-                Close
-              </Button>
+            <div className="mt-4">
+              <Button onClick={() => { navigator.clipboard.writeText(meetLink); alert("Meeting link copied to clipboard!"); }} variant="outline" className="w-full mb-2">Copy Link</Button>
+              <Button onClick={handleClose} className="w-full">Close</Button>
             </div>
           </div>
         ) : (
           <>
             <div className="space-y-4 py-2">
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
+              {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
+
+              {!isGapiLoaded || !isGsiLoaded ? (
+                <div className="text-center">
+                  <p>Loading Google API...</p>
+                  {/* You can add a spinner here */}
+                </div>
+              ) : !isSignedIn ? (
+                <div className="flex justify-center mb-4">
+                  <Button onClick={handleSignIn} disabled={isLoading} className="w-full">
+                    {isLoading ? "Signing in..." : "Sign in with Google"}
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex justify-between items-center mb-4">
+                  <p className="text-sm">Signed in to Google</p>
+                  <Button variant="outline" size="sm" onClick={handleSignOut}>Sign Out</Button>
+                </div>
               )}
 
               <div>
-                <Label htmlFor="event-name" className="font-medium">
-                  Event Name *
-                </Label>
-                <Input
-                  id="event-name"
-                  value={eventName}
-                  onChange={(e) => setEventName(e.target.value)}
-                  className="mt-1"
-                  placeholder="Enter event name"
-                  required
+                <Label htmlFor="event-name" className="font-medium">Event Name *</Label>
+                <Input 
+                  id="event-name" 
+                  value={eventName} 
+                  onChange={(e) => setEventName(e.target.value)} 
+                  className="mt-1" 
+                  placeholder="Enter event name" 
+                  required 
+                  disabled={!isSignedIn || isLoading} 
                 />
               </div>
 
               <div>
-                <Label htmlFor="event-description" className="font-medium">
-                  Description *
-                </Label>
-                <Textarea
-                  id="event-description"
-                  value={eventDescription}
-                  onChange={(e) => setEventDescription(e.target.value)}
-                  className="mt-1"
-                  rows={3}
-                  placeholder="Enter event description"
-                  required
+                <Label htmlFor="event-description" className="font-medium">Description *</Label>
+                <Textarea 
+                  id="event-description" 
+                  value={eventDescription} 
+                  onChange={(e) => setEventDescription(e.target.value)} 
+                  className="mt-1" 
+                  rows={3} 
+                  placeholder="Enter event description" 
+                  required 
+                  disabled={!isSignedIn || isLoading} 
                 />
               </div>
 
@@ -262,6 +431,7 @@ export default function Schedule({ open, onClose }: ScheduleProps) {
                         value={format(startDate, "yyyy-MM-dd")}
                         onChange={(e) => handleDateChange(e.target.value ? new Date(e.target.value) : null, true)}
                         className="flex-1"
+                        disabled={!isSignedIn || isLoading}
                       />
                     </div>
                     <div className="flex items-center space-x-2">
@@ -269,15 +439,14 @@ export default function Schedule({ open, onClose }: ScheduleProps) {
                       <Select
                         value={`${startDate.getHours().toString().padStart(2, "0")}:${startDate.getMinutes().toString().padStart(2, "0")}`}
                         onValueChange={(value) => handleTimeChange(value, true)}
+                        disabled={!isSignedIn || isLoading}
                       >
                         <SelectTrigger className="flex-1">
                           <SelectValue placeholder="Select time" />
                         </SelectTrigger>
                         <SelectContent>
-                          {timeOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
+                          {generateTimeOptions().map((option) => (
+                            <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -295,6 +464,7 @@ export default function Schedule({ open, onClose }: ScheduleProps) {
                         value={format(endDate, "yyyy-MM-dd")}
                         onChange={(e) => handleDateChange(e.target.value ? new Date(e.target.value) : null, false)}
                         className="flex-1"
+                        disabled={!isSignedIn || isLoading}
                       />
                     </div>
                     <div className="flex items-center space-x-2">
@@ -302,15 +472,14 @@ export default function Schedule({ open, onClose }: ScheduleProps) {
                       <Select
                         value={`${endDate.getHours().toString().padStart(2, "0")}:${endDate.getMinutes().toString().padStart(2, "0")}`}
                         onValueChange={(value) => handleTimeChange(value, false)}
+                        disabled={!isSignedIn || isLoading}
                       >
                         <SelectTrigger className="flex-1">
                           <SelectValue placeholder="Select time" />
                         </SelectTrigger>
                         <SelectContent>
-                          {timeOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
+                          {generateTimeOptions().map((option) => (
+                            <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -321,10 +490,8 @@ export default function Schedule({ open, onClose }: ScheduleProps) {
             </div>
 
             <DialogFooter className="mt-4">
-              <Button variant="outline" onClick={handleClose} disabled={isLoading}>
-                Cancel
-              </Button>
-              <Button onClick={handleCreateMeeting} disabled={isLoading}>
+              <Button variant="outline" onClick={handleClose} disabled={isLoading}>Cancel</Button>
+              <Button onClick={handleCreateMeeting} disabled={isLoading || !isSignedIn}>
                 {isLoading ? "Creating..." : "Create Meeting"}
               </Button>
             </DialogFooter>
