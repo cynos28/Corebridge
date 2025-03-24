@@ -90,6 +90,12 @@ const menuItems = [
           href: "/list/announcements",
           visible: ["admin", "teacher", "student", "parent"],
         },
+        {
+          icon: "/tickets.png",
+          label: "Tickets",
+          href: "/list/tickets",
+          visible: ["admin", "student"],
+        },
       ],
     },
 
