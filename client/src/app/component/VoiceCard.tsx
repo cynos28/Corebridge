@@ -434,13 +434,13 @@ export default function VoiceCard() {
   return (
     <>
       <Card
-        className="w-full mt-6 p-4 border-l-4 border-l-purple-500 hover:shadow-lg transition-shadow"
+        className="w-full mt-6 p-4 border-l-4 border-l-[#7AB2B2] hover:shadow-lg transition-shadow"
         onMouseEnter={() => setIsHovering(true)}
         onMouseLeave={() => setIsHovering(false)}
       >
         <CardHeader className="pb-4">
           <CardTitle className="text-xl font-semibold flex items-center gap-3">
-            <Video className="h-6 w-6 text-purple-500" />
+            <Video className="h-6 w-6 text-[#7AB2B2]" />
             Create Video Meeting
           </CardTitle>
           <CardDescription className="mt-2 text-sm text-muted-foreground">
@@ -451,11 +451,11 @@ export default function VoiceCard() {
         <CardContent className="py-4">
           <div className="flex flex-col sm:flex-row gap-5 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-purple-500" />
+              <Calendar className="h-5 w-5 text-[#7AB2B2]" />
               <span>Instant or scheduled</span>
             </div>
             <div className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-purple-500" />
+              <Users className="h-5 w-5 text-[#7AB2B2]" />
               <span>Up to 100 participants</span>
             </div>
           </div>
@@ -471,8 +471,8 @@ export default function VoiceCard() {
           <Button
             className={`gap-3 px-5 py-2 ${
               isHovering
-                ? "bg-purple-600 hover:bg-purple-700"
-                : "bg-purple-500 hover:bg-purple-600"
+                ? "bg-[#7AB2B2] hover:bg-[#4D869C]"
+                : "bg-[#7AB2B2] hover:bg-[#4D869C]"
             }`}
             onClick={startVoiceMeeting}
             disabled={isListening || isLoading}
