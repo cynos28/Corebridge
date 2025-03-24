@@ -106,14 +106,28 @@ const TicketForm: React.FC<TicketFormProps> = ({ onSubmit }) => {
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                             required
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 resize-y min-h-[100px]"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cbSky focus:border-transparent transition duration-200 resize-y min-h-[100px]"
                             placeholder="Provide detailed description"
+                        />
+                    </div>
+
+                    <div>
+                        <label 
+                            htmlFor="document" 
+                            className="block text-sm font-medium text-gray-700 mb-1"
+                        >
+                            Upload Document
+                        </label>
+                        <input
+                            type="file"
+                            id="document"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                         />
                     </div>
 
                     <button
                         type="submit"
-                        className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-200 font-medium"
+                        className="w-full bg-cbYellow text-white py-2 px-4 rounded-lg hover:bg-[#236d6d] transition duration-200 font-medium"
                     >
                         Submit Ticket
                     </button>
