@@ -22,11 +22,11 @@ const config: Config = {
   			'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))'
   		},
   		colors: {
-  			cbSky: '#C3EBFA',
+  			cbSky: '#CDE8E5',
   			cbSkyLight: '#EDF9FD',
-  			cbPurple: '#CFCFFF',
-  			cbPurpleLight: '#F1F0FF',
-  			cbYellow: '#FAE27C',
+  			cbPurple: '#CDE8E5',
+  			cbPurpleLight: '#D6C0B3',
+  			cbYellow: '#7AB2B2',
   			cbYellowLight: '#FEFCE8',
   			border: 'hsl(var(--border))',
   			input: 'hsl(var(--input))',
