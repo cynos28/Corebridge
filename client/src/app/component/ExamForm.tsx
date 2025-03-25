@@ -7,6 +7,9 @@ interface ExamFormProps {
   onSubmit: (formData: FormData) => void;
 }
 
+const today = new Date().toISOString().split("T")[0];
+
+
 const ExamForm: React.FC<ExamFormProps> = ({ onClose, onSubmit }) => {
   const [subjectName, setSubjectName] = useState("");
   const [className, setClassName] = useState("");
@@ -86,6 +89,7 @@ const ExamForm: React.FC<ExamFormProps> = ({ onClose, onSubmit }) => {
               type="date"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
+              min = {today}
               required
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             />
