@@ -1,4 +1,8 @@
-import FormModal from "@/app/component/FormModal";
+"use client";
+
+import React, { useState } from "react";
+import ResultForm from "@/app/component/ResultForm";
+import { FaPlus } from "react-icons/fa";
 import Pagination from "@/app/component/Pagination";
 import Table from "@/app/component/Table";
 import TableSearch from "@/app/component/TableSearch";
@@ -55,6 +59,18 @@ const columns = [
 ];
 
 const ResultListPage = () => {
+
+  const [isResultFormOpen, setIsResultFormOpen] = useState(false);
+
+  const openResultForm = () => setIsResultFormOpen(true);
+  const closeResultForm = () => setIsResultFormOpen(false);
+  
+    const handleResultFormSubmit  = (formData: FormData) => {
+      // Handle form submission here (e.g., API call)
+      console.log("New Resut data:", Object.fromEntries(formData));
+      setIsResultFormOpen(false); // Close the popup after submission
+    };
+
   const renderRow = (item: Result) => (
     <tr
       key={item.id}
@@ -70,8 +86,7 @@ const ResultListPage = () => {
         <div className="flex items-center gap-2">
           {role === "admin" || role === "teacher" && (
             <>
-              <FormModal table="result" type="update" data={item} />
-              <FormModal table="result" type="delete" id={item.id} />
+              
             </>
           )}
         </div>
@@ -93,7 +108,13 @@ const ResultListPage = () => {
             <button className="w-8 h-8 flex items-center justify-center rounded-full bg-lamaYellow">
               <Image src="/sort.png" alt="" width={14} height={14} />
             </button>
-            {role === "admin" || role === "teacher" && <FormModal table="result" type="create" />}
+            {role === "admin" || role === "teacher" && 
+            <button
+                            onClick={openResultForm}
+                            className="w-8 h-8 flex items-center justify-center rounded-full bg-cbYellow"
+                          >
+                            <FaPlus size={14} />
+                          </button>}
           </div>
         </div>
       </div>
@@ -101,6 +122,10 @@ const ResultListPage = () => {
       <Table columns={columns} renderRow={renderRow} data={resultsData} />
       {/* PAGINATION */}
       <Pagination />
+      {isResultFormOpen && (
+        <ResultForm onClose={closeResultForm} onSubmit={handleResultFormSubmit} />
+      )}
+    
     </div>
   );
 };

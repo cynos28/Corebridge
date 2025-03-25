@@ -6,6 +6,7 @@ interface ResultFormProps {
   onClose: () => void;
   onSubmit: (formData: FormData) => void;
 }
+const today = new Date().toISOString().split("T")[0];
 
 const ResultForm: React.FC<ResultFormProps> = ({ onClose, onSubmit }) => {
   const [subjectName, setSubjectName] = useState("");
@@ -55,7 +56,7 @@ const ResultForm: React.FC<ResultFormProps> = ({ onClose, onSubmit }) => {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                student
+                Student
               </label>
               <input
                 type="text"
@@ -69,7 +70,7 @@ const ResultForm: React.FC<ResultFormProps> = ({ onClose, onSubmit }) => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                score
+                Score
               </label>
               <input
                 type="text"
@@ -77,7 +78,7 @@ const ResultForm: React.FC<ResultFormProps> = ({ onClose, onSubmit }) => {
                 onChange={(e) => setScore(e.target.value)}
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                placeholder="e.g., Mathematics"
+                placeholder="e.g., 90"
               />
             </div>
 
@@ -118,6 +119,7 @@ const ResultForm: React.FC<ResultFormProps> = ({ onClose, onSubmit }) => {
               type="date"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
+              min={today}
               required
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             />
