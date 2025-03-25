@@ -9,9 +9,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.use('/api/exams', require('./routes/exam.routes'));
-app.use('/api/assignments', require('./routes/assignment.routes'));
-app.use('/api/results', require('./routes/result.routes'));
+
 
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => {
