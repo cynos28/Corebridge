@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import ResultForm from "@/app/component/ResultForm";
+import ResultForm from "@/app/component/forms/ResultForm";
 import { FaPlus } from "react-icons/fa";
 import Pagination from "@/app/component/Pagination";
 import Table from "@/app/component/Table";
