@@ -62,8 +62,8 @@ const config: Config = {
   				foreground: 'hsl(var(--card-foreground))'
   			},
   			purple: {
-  				'500': '#8B5CF6',
-  				'600': '#7C3AED',
+  				'500': '#ba9df1',
+  				'600': '#9d75eb',
   				'700': '#6D28D9'
   			},
   			chart: {

@@ -434,13 +434,13 @@ export default function VoiceCard() {
   return (
     <>
       <Card
-        className="w-full mt-6 p-4 border-l-4 border-l-[#7AB2B2] hover:shadow-lg transition-shadow"
+        className="w-full mt-6 p-4 border-l-4 border-l-[#ba9df1] hover:shadow-lg transition-shadow"
         onMouseEnter={() => setIsHovering(true)}
         onMouseLeave={() => setIsHovering(false)}
       >
         <CardHeader className="pb-4">
           <CardTitle className="text-xl font-semibold flex items-center gap-3">
-            <Video className="h-6 w-6 text-[#7AB2B2]" />
+            <Video className="h-6 w-6 text-[#ba9df1]" />
             Create Video Meeting
           </CardTitle>
           <CardDescription className="mt-2 text-sm text-muted-foreground">
@@ -451,11 +451,11 @@ export default function VoiceCard() {
         <CardContent className="py-4">
           <div className="flex flex-col sm:flex-row gap-5 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-[#7AB2B2]" />
+              <Calendar className="h-5 w-5 text-[#ba9df1]" />
               <span>Instant or scheduled</span>
             </div>
             <div className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-[#7AB2B2]" />
+              <Users className="h-5 w-5 text-[#ba9df1]" />
               <span>Up to 100 participants</span>
             </div>
           </div>
@@ -471,8 +471,8 @@ export default function VoiceCard() {
           <Button
             className={`gap-3 px-5 py-2 ${
               isHovering
-                ? "bg-[#7AB2B2] hover:bg-[#4D869C]"
-                : "bg-[#7AB2B2] hover:bg-[#4D869C]"
+                ? "bg-[#9d75eb] hover:bg-[#814de5]"
+                : "bg-[#9d75eb] hover:bg-[#814de5]"
             }`}
             onClick={startVoiceMeeting}
             disabled={isListening || isLoading}
@@ -491,7 +491,7 @@ export default function VoiceCard() {
 
         {voiceMeetLink && (
           <div className="mt-4 p-4 bg-green-100 rounded">
-            <p className="font-semibold text-green-800 mb-2">
+            <p className="font-semibold text-[#814de5] mb-2">
               Your Google Meet has been created successfully!
             </p>
             <p className="mb-1">
@@ -505,7 +505,7 @@ export default function VoiceCard() {
             >
               {voiceMeetLink}
             </a>
-            <p className="mt-2 text-sm text-green-700">
+            <p className="mt-2 text-sm text-[#814de5]">
               The meeting has been added to your Google Calendar.
             </p>
           </div>

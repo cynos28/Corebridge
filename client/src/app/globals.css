@@ -13,7 +13,7 @@
 }
 
 .react-calendar__tile--active {
-  background-color: #c3ebfa !important;
+  background-color: #d6c5f7 !important;
   color: black !important;
 }
 
@@ -111,7 +111,7 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --background:#f3eefc;
     --foreground: 0 0% 3.9%;
     --card: 0 0% 100%;
     --card-foreground: 0 0% 3.9%;

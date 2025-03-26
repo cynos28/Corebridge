@@ -18,12 +18,12 @@ const data = [
   {
     name: "Girls",
     count: 53,
-    fill: "#CDE8E5",
+    fill: "#d6c5f7",
   },
   {
     name: "Boys",
     count: 53,
-    fill: "#7AB2B2",
+    fill: "#9d75eb",
   },
 ];
 
@@ -59,7 +59,7 @@ const CountCharts = () => {
           </RadialBarChart>
         </ResponsiveContainer>
         <Image
-          src="/maleFemale.png"
+          src="/maleFemalee.png"
           alt=""
           width={50}
           height={50}
