@@ -1,4 +1,4 @@
-const Result = require("../models/Result");
+const Result = require("../models/Results");
 
 // CREATE a new result
 exports.createResult = async (req, res) => {

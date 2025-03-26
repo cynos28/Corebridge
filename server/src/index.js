@@ -5,7 +5,7 @@ require("dotenv").config();
 
 const assignmentRoutes = require("./routes/assignmentRoutes");
 const examRoutes = require("./routes/examRoutes");
-const resultRoutes = require("./routes/resultRoutes");
+const resultRoutes = require("./routes/resultsRoutes");
 
 const app = express();
 app.use(cors());
