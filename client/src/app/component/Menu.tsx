@@ -131,22 +131,28 @@ const menuItems = [
       <div className="mt-4 text-sm">
         {menuItems.map(i => (
           <div className="flex flex-col gap-2" key={i.title}>
-          <span className="hidden lg:block text-gray-400 font-light my-4">
-            {i.title}
+          <span className="hidden lg:block text-gray-400 font-light my-4 ">
+        {i.title}
           </span>
           {i.items.map((item) => {
-            if (item.visible.includes(role)) {
-              return (
-                <Link
-                  href={item.href}
-                  key={item.label}
-                  className="flex items-center justify-center lg:justify-start gap-4 text-gray-500 py-2 md:px-2 rounded-md hover:bg-[#CDE8E5]"
-                >
-                  <Image src={item.icon} alt="" width={20} height={20} />
-                  <span className="hidden lg:block">{item.label}</span>
-                </Link>
-              );
-            }
+        if (item.visible.includes(role)) {
+          return (
+            <Link
+          href={item.href}
+          key={item.label}
+          className="flex items-center justify-center lg:justify-start gap-4 text-gray-500 py-2 md:px-2 rounded-md hover:bg-[#f3eefc] hover:text-[#9d75eb]"
+            >
+          <Image
+            src={item.icon}
+            alt=""
+            width={20}
+            height={20}
+            className="group-hover:filter group-hover:brightness-0 group-hover:invert-[0.5] group-hover:sepia group-hover:saturate-[5] group-hover:hue-rotate-[250deg] group-hover:brightness-[1.2] group-hover:contrast-[1.2]"
+          />
+          <span className="hidden lg:block">{item.label}</span>
+            </Link>
+          );
+        }
           })}
         </div>
         ))}
