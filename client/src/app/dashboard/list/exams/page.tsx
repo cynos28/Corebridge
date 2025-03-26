@@ -1,9 +1,13 @@
-import FormModal from "@/app/component/FormModal";
-import Pagination from "@/app/component/Pagination";
-import Table from "@/app/component/Table";
+"use client";
+
+import React, { useState } from "react";
+import { FaPlus } from "react-icons/fa";
+import ExamForm from "@/app/component/ExamForm";
 import TableSearch from "@/app/component/TableSearch";
-import { examsData, role } from "@/lib/data";
+import Table from "@/app/component/Table";
+import Pagination from "@/app/component/Pagination";
 import Image from "next/image";
+import { examsData, role } from "@/lib/data";
 
 type Exam = {
   id: number;
@@ -39,6 +43,17 @@ const columns = [
 ];
 
 const ExamListPage = () => {
+  const [isExamFormOpen, setIsExamFormOpen] = useState(false);
+
+  const openExamForm = () => setIsExamFormOpen(true);
+  const closeExamForm = () => setIsExamFormOpen(false);
+
+  const handleExamFormSubmit = (formData: FormData) => {
+    // Process form data, e.g. call an API or update state
+    console.log("Form submitted", Object.fromEntries(formData.entries()));
+    closeExamForm();
+  };
+
   const renderRow = (item: Exam) => (
     <tr
       key={item.id}
@@ -51,10 +66,7 @@ const ExamListPage = () => {
       <td>
         <div className="flex items-center gap-2">
           {(role === "admin" || role === "teacher") && (
-            <>
-              <FormModal table="assignment" type="update" data={item} />
-              <FormModal table="assignment" type="delete" id={item.id} />
-            </>
+            <>{/* Update/Delete buttons */}</>
           )}
         </div>
       </td>
@@ -70,20 +82,33 @@ const ExamListPage = () => {
           <TableSearch />
           <div className="flex items-center gap-4 self-end">
             <button className="w-8 h-8 flex items-center justify-center rounded-full bg-cbYellow">
-              <Image src="/filter.png" alt="" width={14} height={14} />
+              <Image src="/filter.png" alt="Filter" width={14} height={14} />
             </button>
             <button className="w-8 h-8 flex items-center justify-center rounded-full bg-cbYellow">
-              <Image src="/sort.png" alt="" width={14} height={14} />
+              <Image src="/sort.png" alt="Sort" width={14} height={14} />
             </button>
-            {role === "admin" ||
-              (role === "teacher" && <FormModal table="exam" type="create" />)}
+            {(role === "admin" || role === "teacher") && (
+              <button
+                onClick={openExamForm}
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-cbYellow"
+              >
+                <FaPlus size={14} />
+              </button>
+            )}
           </div>
         </div>
       </div>
+
       {/* LIST */}
       <Table columns={columns} renderRow={renderRow} data={examsData} />
+
       {/* PAGINATION */}
       <Pagination />
+
+      {/* Exam Form Modal */}
+      {isExamFormOpen && (
+        <ExamForm onClose={closeExamForm} onSubmit={handleExamFormSubmit} />
+      )}
     </div>
   );
 };
