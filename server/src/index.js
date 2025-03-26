@@ -5,12 +5,12 @@ require("dotenv").config();
 
 const assignmentRoutes = require("./routes/assignmentRoutes");
 const examRoutes = require("./routes/examRoutes");
+const resultRoutes = require("./routes/resultRoutes");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.use("/exams", examRoutes);
 
 mongoose
   .connect(process.env.MONGODB_URI)
@@ -49,6 +49,9 @@ function startServer(retries = 3) {
 
 app.use("/api/assignments", assignmentRoutes);
 app.use("/api/exams", examRoutes);
+app.use("/api/results", resultRoutes);
+
+
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
