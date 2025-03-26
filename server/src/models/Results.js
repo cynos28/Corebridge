@@ -1,3 +1,4 @@
+// backend/models/Result.js
 const mongoose = require("mongoose");
 
 const ResultSchema = new mongoose.Schema(
