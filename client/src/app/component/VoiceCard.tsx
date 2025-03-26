@@ -490,7 +490,7 @@ export default function VoiceCard() {
         </CardFooter>
 
         {voiceMeetLink && (
-          <div className="mt-4 p-4 bg-green-100 rounded">
+          <div className="mt-4 p-4 bg-[#cfbaf5] rounded">
             <p className="font-semibold text-[#814de5] mb-2">
               Your Google Meet has been created successfully!
             </p>
