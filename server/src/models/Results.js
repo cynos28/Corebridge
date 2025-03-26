@@ -1,13 +1,13 @@
 const mongoose = require("mongoose");
 
-const resultSchema = new mongoose.Schema(
+const ResultSchema = new mongoose.Schema(
   {
-    subjectName: { type: String, required: true },
+    subject: { type: String, required: true },
     student: { type: String, required: true },
-    score: { type: Number, required: true },
-    teacherName: { type: String, required: true },
-    className: { type: String, required: true },
-    dueDate: { type: Date, required: true },
+    score: { type: String, required: true },
+    class: { type: String, required: true },
+    teacher: { type: String, required: true },
+    date: { type: Date, required: true },
   },
   { timestamps: true }
 );

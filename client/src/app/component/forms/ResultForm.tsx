@@ -165,4 +165,4 @@ const ResultListPage = () => {
   );
 };
 
-export default ResultListPage;
+export default ResultForm;
