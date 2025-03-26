@@ -6,6 +6,7 @@ interface ResultFormProps {
   onClose: () => void;
   onSubmit: (formData: FormData) => void;
 }
+
 const today = new Date().toISOString().split("T")[0];
 
 const ResultForm: React.FC<ResultFormProps> = ({ onClose, onSubmit }) => {
@@ -64,7 +65,7 @@ const ResultForm: React.FC<ResultFormProps> = ({ onClose, onSubmit }) => {
                 onChange={(e) => setStudentName(e.target.value)}
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                placeholder="e.g., Mathematics"
+                placeholder="e.g., John Doe"
               />
             </div>
 
