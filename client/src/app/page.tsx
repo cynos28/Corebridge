@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useRef } from "react"
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion"
+import SignInDialog from "./components/SignInDialog"
+import { SignInCredentials } from "./types/auth"
 
 // Animation variants for different elements
 const containerVariants = {
@@ -38,6 +40,7 @@ export default function Page() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [activeFeature, setActiveFeature] = useState(0)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isSignInOpen, setIsSignInOpen] = useState(false)
   const { scrollYProgress } = useScroll()
   const heroRef = useRef(null)
 
@@ -137,8 +140,33 @@ export default function Page() {
     }
   }, [features.length])
 
+  const handleSignIn = async (credentials: SignInCredentials) => {
+    // Here you would typically make an API call to authenticate the user
+    console.log('Signing in with:', credentials);
+    
+    // Mock different redirects based on role
+    switch (credentials.role) {
+      case 'student':
+        window.location.href = '/dashboard/student';
+        break;
+      case 'teacher':
+        window.location.href = '/dashboard/teacher';
+        break;
+      case 'admin':
+        window.location.href = '/dashboard/admin';
+        break;
+    }
+  };
+
   return (
     <div className="bg-gradient-to-br from-[#F5F7FA] to-[#f8f5ff] flex flex-col min-h-screen">
+      {/* Add SignInDialog */}
+      <SignInDialog
+        isOpen={isSignInOpen}
+        onClose={() => setIsSignInOpen(false)}
+        onSignIn={handleSignIn}
+      />
+
       {/* Navbar with glass effect when scrolled */}
       <motion.nav
         className={`fixed w-full z-50 transition-all duration-300 ${
@@ -194,8 +222,8 @@ export default function Page() {
               </motion.a>
             ))}
             <motion.a
-              href="#"
-              className="text-[#ba9df1] border border-[#ba9df1] px-4 py-2 rounded-full hover:bg-[#ba9df1] hover:text-white transition-all"
+              onClick={() => setIsSignInOpen(true)}
+              className="text-[#ba9df1] border border-[#ba9df1] px-4 py-2 rounded-full hover:bg-[#ba9df1] hover:text-white transition-all cursor-pointer"
               whileHover={{ scale: 1.05, boxShadow: "0px 5px 15px rgba(186, 157, 241, 0.3)" }}
               whileTap={{ scale: 0.95 }}
             >
@@ -234,8 +262,8 @@ export default function Page() {
                   </a>
                 ))}
                 <a
-                  href="#"
-                  className="text-[#ba9df1] border border-[#ba9df1] px-4 py-2 rounded-full text-center hover:bg-[#ba9df1] hover:text-white transition-all"
+                  onClick={() => setIsSignInOpen(true)}
+                  className="text-[#ba9df1] border border-[#ba9df1] px-4 py-2 rounded-full text-center hover:bg-[#ba9df1] hover:text-white transition-all cursor-pointer"
                 >
                   Sign in
                 </a>
