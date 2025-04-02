@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Mic, Video, Calendar, Users, Loader2 } from "lucide-react";
+import { Mic, Video, Calendar, Users, Loader2, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -16,7 +16,14 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@/components/ui/alert";
+import { motion } from "framer-motion";
 import Schedule from "./Schedule";
+
+// Animation variants for buttons
+const buttonVariants = {
+  hover: { scale: 1.05 },
+  tap: { scale: 0.95 },
+};
 
 export default function VoiceCard() {
   // UI States
@@ -40,6 +47,7 @@ export default function VoiceCard() {
   const [isGsiLoaded, setIsGsiLoaded] = useState(false);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isApiLoading, setIsApiLoading] = useState(true);
 
   // Google API Configuration (ensure these are secured in production)
   const CLIENT_ID =
@@ -68,6 +76,8 @@ export default function VoiceCard() {
     } catch (err) {
       console.error("Error initializing GAPI client:", err);
       setError("Failed to initialize Google Calendar API. Please try again.");
+    } finally {
+      setIsApiLoading(false);
     }
   }, [API_KEY]);
 
@@ -89,6 +99,7 @@ export default function VoiceCard() {
       script.onerror = () => {
         console.error("Error loading GAPI script");
         setError("Failed to load Google API. Please try again later.");
+        setIsApiLoading(false);
       };
       document.body.appendChild(script);
     };
@@ -102,6 +113,7 @@ export default function VoiceCard() {
       script.onerror = () => {
         console.error("Error loading GSI script");
         setError("Failed to load Google Identity Services. Please try again later.");
+        setIsApiLoading(false);
       };
       document.body.appendChild(script);
     };
@@ -125,6 +137,15 @@ export default function VoiceCard() {
     };
   }, [initializeGapiClient]);
 
+  // Check persisted sign-in state after APIs are loaded
+  useEffect(() => {
+    if (isGapiLoaded && isGsiLoaded) {
+      const signedIn = localStorage.getItem("isSignedIn") === "true";
+      setIsSignedIn(signedIn);
+      setIsApiLoading(false);
+    }
+  }, [isGapiLoaded, isGsiLoaded]);
+
   // Google Sign-In using Google Identity Services
   const handleVoiceSignIn = async () => {
     if (!isGapiLoaded || !isGsiLoaded) {
@@ -144,16 +165,30 @@ export default function VoiceCard() {
             return;
           }
           setIsSignedIn(true);
+          localStorage.setItem("isSignedIn", "true");
           setIsLoading(false);
         },
       });
-      tokenClient.requestAccessToken({ prompt: "consent" });
+      tokenClient.requestAccessToken(); // Removed prompt: "consent"
       return true;
     } catch (err) {
       console.error("Error signing in:", err);
       setError("Failed to sign in with Google. Please try again.");
       setIsLoading(false);
       return false;
+    }
+  };
+
+  // Sign-Out function
+  const handleSignOut = () => {
+    setIsSignedIn(false);
+    localStorage.removeItem("isSignedIn");
+    setVoiceMeetLink(null);
+    setError(null);
+    if (window.google?.accounts?.oauth2) {
+      window.google.accounts.oauth2.revoke(CLIENT_ID, () => {
+        console.log("Google token revoked");
+      });
     }
   };
 
@@ -169,7 +204,7 @@ export default function VoiceCard() {
     if (/^\d{4}-\d{2}-\d{2}$/.test(inputDate)) {
       return inputDate;
     }
-    const digitsOnly = inputDate.replace(/\D/g, '');
+    const digitsOnly = inputDate.replace(/\D/g, "");
     if (digitsOnly.length === 8) {
       const year = digitsOnly.substring(0, 4);
       const month = digitsOnly.substring(4, 6);
@@ -184,14 +219,14 @@ export default function VoiceCard() {
     if (/^\d{2}:\d{2}$/.test(inputTime)) {
       return inputTime;
     }
-    const digitsOnly = inputTime.replace(/\D/g, '');
+    const digitsOnly = inputTime.replace(/\D/g, "");
     if (digitsOnly.length === 4) {
       const hours = digitsOnly.substring(0, 2);
       const minutes = digitsOnly.substring(2, 4);
       return `${hours}:${minutes}`;
     }
     if (digitsOnly.length === 3) {
-      const hours = digitsOnly.substring(0, 1).padStart(2, '0');
+      const hours = digitsOnly.substring(0, 1).padStart(2, "0");
       const minutes = digitsOnly.substring(1, 3);
       return `${hours}:${minutes}`;
     }
@@ -221,7 +256,7 @@ export default function VoiceCard() {
 
   // Process raw voice input for date
   const processDateInput = (input) => {
-    const processed = input.trim().replace(/[^\w\s]/g, '');
+    const processed = input.trim().replace(/[^\w\s]/g, "");
     const dateMatch = processed.match(/\b(\d{8}|\d{6})\b/);
     if (dateMatch) {
       return formatDate(dateMatch[0]);
@@ -229,14 +264,14 @@ export default function VoiceCard() {
     if (/\b(today|now)\b/i.test(processed)) {
       const today = new Date();
       return formatDate(
-        `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`
+        `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}`
       );
     }
     if (/\b(tomorrow)\b/i.test(processed)) {
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
       return formatDate(
-        `${tomorrow.getFullYear()}${String(tomorrow.getMonth() + 1).padStart(2, '0')}${String(tomorrow.getDate()).padStart(2, '0')}`
+        `${tomorrow.getFullYear()}${String(tomorrow.getMonth() + 1).padStart(2, "0")}${String(tomorrow.getDate()).padStart(2, "0")}`
       );
     }
     return processed;
@@ -244,7 +279,7 @@ export default function VoiceCard() {
 
   // Process raw voice input for time
   const processTimeInput = (input) => {
-    const processed = input.trim().replace(/[^\w\s]/g, '');
+    const processed = input.trim().replace(/[^\w\s]/g, "");
     const timeMatch = processed.match(/\b(\d{4}|\d{3}|\d{2})\b/);
     if (timeMatch) {
       return formatTime(timeMatch[0]);
@@ -255,7 +290,6 @@ export default function VoiceCard() {
   // Ask a voice question and listen for the response
   const askVoiceQuestion = (question) => {
     return new Promise((resolve, reject) => {
-      // Speak the question out loud
       const synth = window.speechSynthesis;
       const utterance = new SpeechSynthesisUtterance(question);
       utterance.onend = () => {
@@ -295,24 +329,24 @@ export default function VoiceCard() {
       const formattedDate = formatDate(data.meetingDate);
       const formattedStartTime = formatTime(data.startTime);
       const formattedEndTime = formatTime(data.endTime);
-      
+
       if (!isValidDate(formattedDate)) {
         throw new Error(`Invalid date format: ${data.meetingDate}. Use YYYYMMDD format.`);
       }
       if (!isValidTime(formattedStartTime) || !isValidTime(formattedEndTime)) {
         throw new Error("Invalid time format. Use HHMM format.");
       }
-      
+
       const startDate = new Date(`${formattedDate}T${formattedStartTime}:00`);
       const endDate = new Date(`${formattedDate}T${formattedEndTime}:00`);
-      
+
       if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
         throw new Error("Failed to parse date and time values.");
       }
       if (endDate <= startDate) {
         throw new Error("End time must be after start time.");
       }
-      
+
       const event = {
         summary: data.eventName || "New Meeting",
         description: data.eventDescription || "",
@@ -333,34 +367,37 @@ export default function VoiceCard() {
           },
         },
       };
-      
+
       const response = await window.gapi.client.calendar.events.insert({
         calendarId: "primary",
         resource: event,
         conferenceDataVersion: 1,
       });
-      
+
       return response.result.hangoutLink || null;
     } catch (err) {
       console.error("Error creating voice meeting event:", err);
-      throw new Error(`Failed to create meeting: ${err.message || "Unknown error"}`);
+      if (err.result?.error?.code === 401) {
+        setIsSignedIn(false);
+        localStorage.removeItem("isSignedIn");
+        setError("Your session has expired. Please sign in again to continue.");
+        return null;
+      }
+      setError(`Failed to create meeting: ${err.message || "Unknown error"}`);
+      return null;
     }
   };
 
   // Main voice meeting flow
   const startVoiceMeeting = async () => {
     if (!isSignedIn) {
-      const signedIn = await handleVoiceSignIn();
-      if (!signedIn) {
-        setError("You need to sign in with Google to create a meeting.");
-        return;
-      }
+      setError("Please sign in with your Google account to create a meeting.");
+      return;
     }
     try {
       setIsListening(true);
       setError(null);
-      
-      // Prepare an object to store responses
+
       const responses = {
         eventName: "",
         eventDescription: "",
@@ -371,8 +408,7 @@ export default function VoiceCard() {
 
       responses.eventName = await askVoiceQuestion("What is the title of your meeting?");
       responses.eventDescription = await askVoiceQuestion("Please provide a brief description for your meeting.");
-      
-      // Get and process date input
+
       let dateResponse;
       do {
         dateResponse = await askVoiceQuestion(
@@ -381,8 +417,7 @@ export default function VoiceCard() {
         dateResponse = processDateInput(dateResponse);
       } while (!isValidDate(dateResponse));
       responses.meetingDate = dateResponse;
-      
-      // Get start time
+
       let timeResponse;
       do {
         timeResponse = await askVoiceQuestion(
@@ -391,8 +426,7 @@ export default function VoiceCard() {
         timeResponse = processTimeInput(timeResponse);
       } while (!isValidTime(timeResponse));
       responses.startTime = timeResponse;
-      
-      // Get end time
+
       do {
         timeResponse = await askVoiceQuestion(
           "What is the end time? For example, say 0330 for 3:30 AM."
@@ -400,21 +434,28 @@ export default function VoiceCard() {
         timeResponse = processTimeInput(timeResponse);
       } while (!isValidTime(timeResponse));
       responses.endTime = timeResponse;
-      
+
       setVoiceMeetingData(responses);
-      
-      // Prepare display-friendly strings for confirmation
+
       const displayDate = new Date(responses.meetingDate).toLocaleDateString();
-      const displayStartTime = new Date(`2000-01-01T${responses.startTime}`).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      const displayEndTime = new Date(`2000-01-01T${responses.endTime}`).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      
+      const displayStartTime = new Date(`2000-01-01T${responses.startTime}`).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      const displayEndTime = new Date(`2000-01-01T${responses.endTime}`).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+
       const confirmationText = `I'm about to create a meeting titled "${responses.eventName}" on ${displayDate} from ${displayStartTime} to ${displayEndTime}. Should I create this meeting?`;
       const confirmation = await askVoiceQuestion(confirmationText);
-      
+
       if (/yes|yeah|yep|confirm|create it|sure/i.test(confirmation)) {
         const meetLink = await createVoiceCalendarEvent(responses);
-        setVoiceMeetLink(meetLink);
-        speakMessage("Your meeting has been created successfully!");
+        if (meetLink) {
+          setVoiceMeetLink(meetLink);
+          speakMessage("Your meeting has been created successfully!");
+        }
       } else {
         setError("Meeting creation cancelled.");
         speakMessage("Meeting creation cancelled.");
@@ -428,94 +469,160 @@ export default function VoiceCard() {
   };
 
   // Modal handlers
-  const openModal = () => setIsModalOpen(true);
+  const openModal = () => {
+    if (!isSignedIn) {
+      setError("Please sign in with your Google account to schedule a meeting.");
+      return;
+    }
+    setIsModalOpen(true);
+  };
   const closeModal = () => setIsModalOpen(false);
 
   return (
     <>
-      <Card
-        className="w-full mt-6 p-4 border-l-4 border-l-[#7AB2B2] hover:shadow-lg transition-shadow"
-        onMouseEnter={() => setIsHovering(true)}
-        onMouseLeave={() => setIsHovering(false)}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
       >
-        <CardHeader className="pb-4">
-          <CardTitle className="text-xl font-semibold flex items-center gap-3">
-            <Video className="h-6 w-6 text-[#7AB2B2]" />
-            Create Video Meeting
-          </CardTitle>
-          <CardDescription className="mt-2 text-sm text-muted-foreground">
-            Schedule a virtual meeting with students or colleagues using voice commands or manually.
-          </CardDescription>
-        </CardHeader>
+        <Card
+          className="w-full mt-6 p-4 border-l-4 border-l-[#4A90E2] hover:shadow-lg transition-shadow"
+          onMouseEnter={() => setIsHovering(true)}
+          onMouseLeave={() => setIsHovering(false)}
+        >
+          <CardHeader className="pb-4">
+            <CardTitle className="text-xl font-semibold flex items-center gap-3">
+              <Video className="h-6 w-6 text-[#4A90E2]" />
+              Create Video Meeting
+            </CardTitle>
+            <CardDescription className="mt-2 text-sm text-gray-600">
+              Schedule a virtual meeting with students, teachers, or parents using voice commands or manually.
+            </CardDescription>
+          </CardHeader>
 
-        <CardContent className="py-4">
-          <div className="flex flex-col sm:flex-row gap-5 text-sm text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-[#7AB2B2]" />
-              <span>Instant or scheduled</span>
+          <CardContent className="py-4">
+            <div className="flex flex-col sm:flex-row gap-5 text-sm text-gray-600">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-[#4A90E2]" />
+                <span>Instant or scheduled</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-[#4A90E2]" />
+                <span>Up to 100 participants</span>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-[#7AB2B2]" />
-              <span>Up to 100 participants</span>
+            <div className="mt-4 text-sm text-gray-600">
+              {isApiLoading ? (
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin text-[#4A90E2]" />
+                  <span>Loading Google APIs...</span>
+                </div>
+              ) : (
+                <span>
+                  {isSignedIn ? "Signed in with Google Account" : "Not Signed In"}
+                </span>
+              )}
             </div>
-          </div>
-          {error && (
-            <Alert variant="destructive" className="mt-4">
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-        </CardContent>
-
-        <CardFooter className="pt-4 flex flex-wrap justify-between items-center gap-3">
-          <Button
-            className={`gap-3 px-5 py-2 ${
-              isHovering
-                ? "bg-[#7AB2B2] hover:bg-[#4D869C]"
-                : "bg-[#7AB2B2] hover:bg-[#4D869C]"
-            }`}
-            onClick={startVoiceMeeting}
-            disabled={isListening || isLoading}
-          >
-            {isListening || isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Mic className="h-4 w-4" />
+            {error && (
+              <Alert variant="destructive" className="mt-4">
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
             )}
-            {isListening ? "Listening..." : isLoading ? "Loading..." : "Start Meeting Now"}
-          </Button>
-          <Button variant="outline" className="px-5 py-2" onClick={openModal} disabled={isLoading}>
-            Schedule
-          </Button>
-        </CardFooter>
+          </CardContent>
 
-        {voiceMeetLink && (
-          <div className="mt-4 p-4 bg-green-100 rounded">
-            <p className="font-semibold text-green-800 mb-2">
-              Your Google Meet has been created successfully!
-            </p>
-            <p className="mb-1">
-              <strong>Meet Link:</strong>
-            </p>
-            <a
-              href={voiceMeetLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:underline break-all"
-            >
-              {voiceMeetLink}
-            </a>
-            <p className="mt-2 text-sm text-green-700">
-              The meeting has been added to your Google Calendar.
-            </p>
-          </div>
-        )}
-      </Card>
+          <CardFooter className="pt-4 flex flex-wrap justify-between items-center gap-3">
+            <div className="flex gap-3">
+              {!isSignedIn ? (
+                <motion.div variants={buttonVariants} whileHover="hover" whileTap="tap">
+                  <Button
+                    className="gap-3 px-5 py-2 bg-[#4A90E2] hover:bg-[#50C878] text-white"
+                    onClick={handleVoiceSignIn}
+                    disabled={isLoading || isApiLoading}
+                    aria-label="Sign in with Google"
+                  >
+                    {isLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Mic className="h-4 w-4" />
+                    )}
+                    {isLoading ? "Signing In..." : "Sign In with Google"}
+                  </Button>
+                </motion.div>
+              ) : (
+                <>
+                  <motion.div variants={buttonVariants} whileHover="hover" whileTap="tap">
+                    <Button
+                      className="gap-3 px-5 py-2 bg-[#4A90E2] hover:bg-[#50C878] text-white"
+                      onClick={startVoiceMeeting}
+                      disabled={isListening || isLoading || isApiLoading}
+                      aria-label="Start meeting with voice commands"
+                    >
+                      {isListening || isLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Mic className="h-4 w-4" />
+                      )}
+                      {isListening ? "Listening..." : isLoading ? "Loading..." : "Start Meeting Now"}
+                    </Button>
+                  </motion.div>
+                  <motion.div variants={buttonVariants} whileHover="hover" whileTap="tap">
+                    <Button
+                      variant="outline"
+                      className="px-5 py-2 border-[#4A90E2] text-[#4A90E2] hover:bg-[#E6F0FA]"
+                      onClick={openModal}
+                      disabled={isLoading || isApiLoading}
+                      aria-label="Schedule a meeting manually"
+                    >
+                      Schedule
+                    </Button>
+                  </motion.div>
+                </>
+              )}
+            </div>
+            {isSignedIn && (
+              <motion.div variants={buttonVariants} whileHover="hover" whileTap="tap">
+                <Button
+                  variant="ghost"
+                  className="gap-2 text-[#4A90E2] hover:text-[#50C878]"
+                  onClick={handleSignOut}
+                  aria-label="Sign out from Google account"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign Out
+                </Button>
+              </motion.div>
+            )}
+          </CardFooter>
+
+          {voiceMeetLink && (
+            <div className="mt-4 p-4 bg-[#E6F0FA] rounded">
+              <p className="font-semibold text-[#4A90E2] mb-2">
+                Your Google Meet has been created successfully!
+              </p>
+              <p className="mb-1">
+                <strong>Meet Link:</strong>
+              </p>
+              <a
+                href={voiceMeetLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#4A90E2] hover:underline break-all"
+              >
+                {voiceMeetLink}
+              </a>
+              <p className="mt-2 text-sm text-[#4A90E2]">
+                The meeting has been added to your Google Calendar.
+              </p>
+            </div>
+          )}
+        </Card>
+      </motion.div>
 
       {isModalOpen && (
-        <Schedule 
-          open={isModalOpen} 
-          onClose={closeModal} 
+        <Schedule
+          open={isModalOpen}
+          onClose={closeModal}
           isSignedIn={isSignedIn}
           onSignIn={handleVoiceSignIn}
           createCalendarEvent={createVoiceCalendarEvent}

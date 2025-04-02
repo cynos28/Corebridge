@@ -17,7 +17,7 @@ const Navbar = () => {
         </div>
         {/* ICONS AND USER */}
         <div className="flex items-center gap-6">
-          <div className="bg-white rounded-full w-9 h-9 flex items-center justify-center cursor-pointer hover:bg-gray-100 transition">
+          <div className="bg-white rounded-full w-9 h-9 flex items-center justify-center cursor-pointer hover:bg-[#f3eefc] transition">
             <Image src="/message.png" alt="Messages" width={20} height={20} />
           </div>
           <div className="relative">
