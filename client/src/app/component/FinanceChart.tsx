@@ -112,10 +112,10 @@ const FinanceChart = () => {
           <Line
             type="monotone"
             dataKey="income"
-            stroke="#C3EBFA"
+            stroke="#d6c5f7"
             strokeWidth={5}
           />
-          <Line type="monotone" dataKey="expense" stroke="#CFCEFF" strokeWidth={5}/>
+          <Line type="monotone" dataKey="expense" stroke="#9d75eb" strokeWidth={5}/>
         </LineChart>
       </ResponsiveContainer>
     </div>
