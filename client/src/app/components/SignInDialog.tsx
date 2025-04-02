@@ -22,6 +22,9 @@ export default function SignInDialog({ isOpen, onClose, onSignIn }: SignInDialog
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSignIn(credentials);
+
+    // Store the role in localStorage for role-based redirection
+    localStorage.setItem("user-role", credentials.role);
   };
 
   return (

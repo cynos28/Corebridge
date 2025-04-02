@@ -131,13 +131,14 @@ const menuItems = [
 
 const Menu = () => {
   const router = useRouter();
-  const [userRole, setUserRole] = useState("student"); // default role
+  const [userRole, setUserRole] = useState("admin"); // default role
 
   useEffect(() => {
-    // Optionally update role from localStorage
     const storedRole = localStorage.getItem("user-role");
     if (storedRole) {
       setUserRole(storedRole);
+    } else {
+      setUserRole("admin"); // Default to admin
     }
   }, []);
 

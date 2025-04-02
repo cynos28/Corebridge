@@ -141,20 +141,21 @@ export default function Page() {
   }, [features.length])
 
   const handleSignIn = async (credentials: SignInCredentials) => {
-    // Here you would typically make an API call to authenticate the user
-    console.log('Signing in with:', credentials);
-    
+    console.log("Signing in with:", credentials);
+
     // Mock different redirects based on role
     switch (credentials.role) {
-      case 'student':
-        window.location.href = '/dashboard/student';
+      case "student":
+        window.location.href = "/dashboard/student";
         break;
-      case 'teacher':
-        window.location.href = '/dashboard/teacher';
+      case "teacher":
+        window.location.href = "/dashboard/teacher";
         break;
-      case 'admin':
-        window.location.href = '/dashboard/admin';
+      case "admin":
+        window.location.href = "/dashboard/admin";
         break;
+      default:
+        console.error("Invalid role");
     }
   };
 
