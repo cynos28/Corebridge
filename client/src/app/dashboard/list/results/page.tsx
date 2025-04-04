@@ -4,10 +4,10 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { FaPlus } from "react-icons/fa";
 import ResultForm from "@/app/component/forms/ResultForm";
-import TableSearch from "@/app/component/TableSearch";
+import ResultTableSearch from "@/app/component/ResultTableSearch";
 import Table from "@/app/component/Table";
 import Pagination from "@/app/component/Pagination";
-import { role, resultsData } from "@/lib/data"; // For static sample data if needed
+import { role } from "@/lib/data";
 
 type Result = {
   _id: string;
@@ -42,6 +42,7 @@ const ResultListPage = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editItem, setEditItem] = useState<Result | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     fetchResults();
@@ -93,7 +94,7 @@ const ResultListPage = () => {
       "Are you sure you want to delete this result?"
     );
     if (!confirmDelete) {
-      return; 
+      return;
     }
 
     try {
@@ -128,6 +129,11 @@ const ResultListPage = () => {
     }
     setIsFormOpen(false);
   };
+
+  // Filter results by subject name (case-insensitive)
+  const filteredResults = results.filter((item) =>
+    item.subjectName.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const renderRow = (item: Result) => (
     <tr
@@ -166,7 +172,10 @@ const ResultListPage = () => {
       <div className="flex items-center justify-between">
         <h1 className="hidden md:block text-lg font-semibold">All Results</h1>
         <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-          <TableSearch />
+          <ResultTableSearch
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
           <div className="flex items-center gap-4 self-end">
             <button className="w-8 h-8 flex items-center justify-center rounded-full bg-cbYellow">
               <Image src="/filter.png" alt="Filter" width={14} height={14} />
@@ -185,7 +194,7 @@ const ResultListPage = () => {
           </div>
         </div>
       </div>
-      <Table columns={columns} renderRow={renderRow} data={results} />
+      <Table columns={columns} renderRow={renderRow} data={filteredResults} />
       <Pagination />
       {isFormOpen && (
         <ResultForm
