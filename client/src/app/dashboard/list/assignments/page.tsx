@@ -8,6 +8,11 @@ import Table from "@/app/component/Table";
 import ResultTableSearch from "@/app/component/ResultTableSearch";
 import Pagination from "@/app/component/Pagination";
 import AssignmentForm from "@/app/component/forms/AssignmentForm";
+import { jsPDF } from "jspdf";
+import html2canvas from "html2canvas";
+import { HiDocumentArrowDown } from "react-icons/hi2";
+import { HiOutlinePencilSquare } from "react-icons/hi2";
+import { HiMiniArchiveBoxXMark } from "react-icons/hi2";
 
 type Assignment = {
   _id: string;
@@ -88,7 +93,7 @@ const AssignmentListPage = () => {
     if (!confirmDelete) {
       return;
     }
-    
+
     try {
       const res = await fetch(`http://localhost:5000/api/assignments/${id}`, {
         method: "DELETE",
@@ -126,6 +131,31 @@ const AssignmentListPage = () => {
     item.subjectName.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const filteredAssignments = assignments.filter((item) =>
+    item.subjectName.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const downloadPDF = async () => {
+    const input = document.getElementById("assignmentSheet");
+    if (!input) return;
+
+    try {
+      const canvas = await html2canvas(input);
+      const imgData = canvas.toDataURL("image/png");
+
+      const pdf = new jsPDF();
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      pdf.save("assignment-report.pdf");
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+    }
+  };
+
+  
+
   const renderRow = (item: Assignment) => (
     <tr key={item._id} className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-cbPurpleLight">
       <td className="p-4">{item.subjectName}</td>
@@ -134,11 +164,11 @@ const AssignmentListPage = () => {
       <td className="hidden md:table-cell">{new Date(item.dueDate).toLocaleDateString()}</td>
       <td>
         <div className="flex items-center gap-2">
-          <button className="px-2 py-1 text-sm bg-blue-500 text-white rounded" onClick={() => openEditForm(item)}>
-            Edit
+          <button className="w-9 h-9 flex items-center justify-center rounded-full bg-blue-400" onClick={() => openEditForm(item)}>
+          <HiOutlinePencilSquare size={18}/>
           </button>
-          <button className="px-2 py-1 text-sm bg-red-500 text-white rounded" onClick={() => handleDeleteAssignment(item._id)}>
-            Delete
+          <button className="w-9 h-9 flex items-center justify-center rounded-full bg-red-400" onClick={() => handleDeleteAssignment(item._id)}>
+          <HiMiniArchiveBoxXMark size={18}/>
           </button>
         </div>
       </td>
@@ -155,6 +185,14 @@ const AssignmentListPage = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
           <div className="flex items-center gap-4 self-end">
+
+          <button
+              onClick={downloadPDF}
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-cbYellow"
+            >
+              <HiDocumentArrowDown size={18} />
+            </button>
+
             <button className="w-8 h-8 flex items-center justify-center rounded-full bg-cbYellow">
               <Image src="/filter.png" alt="Filter" width={14} height={14} />
             </button>
@@ -164,11 +202,19 @@ const AssignmentListPage = () => {
             <button onClick={openCreateForm} className="w-8 h-8 flex items-center justify-center rounded-full bg-cbYellow">
               <FaPlus size={14} />
             </button>
+            
           </div>
         </div>
       </div>
 
-      <Table columns={columns} renderRow={renderRow} data={filteredAssignment} />
+
+
+      {/* Assignment Sheet Container */}
+      <div id="assignmentSheet" className="bg-white p-4 rounded-md flex-1 m-4 mt-0">
+        <Table columns={columns} renderRow={renderRow} data={filteredAssignments} />
+        
+      </div>
+
       <Pagination />
 
       {isFormOpen && (

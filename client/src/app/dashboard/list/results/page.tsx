@@ -176,16 +176,16 @@ const ResultListPage = () => {
       <td>
         <div className="flex items-center gap-2">
           <button
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-blue-400"
+            className="w-9 h-9 flex items-center justify-center rounded-full bg-blue-400"
             onClick={() => openEditForm(item)}
           >
-            <HiOutlinePencilSquare />
+            <HiOutlinePencilSquare size={18}/>
           </button>
           <button
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-red-400"
+            className="w-9 h-9 flex items-center justify-center rounded-full bg-red-400"
             onClick={() => handleDeleteResult(item._id)}
           >
-            <HiMiniArchiveBoxXMark />
+            <HiMiniArchiveBoxXMark  size={18}/>
           </button>
         </div>
       </td>
@@ -206,7 +206,7 @@ const ResultListPage = () => {
           onClick={downloadPDF}
           className="w-8 h-8 flex items-center justify-center rounded-full bg-cbYellow"
         >
-          <HiDocumentArrowDown />
+          <HiDocumentArrowDown size={18} />
         </button>
 
             <button className="w-8 h-8 flex items-center justify-center rounded-full bg-cbYellow">
