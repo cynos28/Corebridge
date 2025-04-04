@@ -8,6 +8,11 @@ import ResultTableSearch from "@/app/component/ResultTableSearch";
 import Table from "@/app/component/Table";
 import Pagination from "@/app/component/Pagination";
 import { role } from "@/lib/data";
+import { jsPDF } from "jspdf";
+import html2canvas from "html2canvas";
+import { HiDocumentArrowDown } from "react-icons/hi2";
+import { HiOutlinePencilSquare } from "react-icons/hi2";
+import { HiMiniArchiveBoxXMark } from "react-icons/hi2";
 
 type Result = {
   _id: string;
@@ -135,6 +140,26 @@ const ResultListPage = () => {
     item.subjectName.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+
+  const downloadPDF = async () => {
+    const input = document.getElementById("resultSheet");
+    if (!input) return;
+
+    try {
+      const canvas = await html2canvas(input);
+      const imgData = canvas.toDataURL("image/png");
+      
+      const pdf = new jsPDF();
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      
+      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      pdf.save("result-report.pdf");
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+    }
+  };
+
   const renderRow = (item: Result) => (
     <tr
       key={item._id}
@@ -151,16 +176,16 @@ const ResultListPage = () => {
       <td>
         <div className="flex items-center gap-2">
           <button
-            className="px-2 py-1 text-sm bg-blue-500 text-white rounded"
+            className="w-10 h-10 flex items-center justify-center rounded-full bg-blue-400"
             onClick={() => openEditForm(item)}
           >
-            Edit
+            <HiOutlinePencilSquare />
           </button>
           <button
-            className="px-2 py-1 text-sm bg-red-500 text-white rounded"
+            className="w-10 h-10 flex items-center justify-center rounded-full bg-red-400"
             onClick={() => handleDeleteResult(item._id)}
           >
-            Delete
+            <HiMiniArchiveBoxXMark />
           </button>
         </div>
       </td>
@@ -177,6 +202,13 @@ const ResultListPage = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
           <div className="flex items-center gap-4 self-end">
+          <button
+          onClick={downloadPDF}
+          className="w-8 h-8 flex items-center justify-center rounded-full bg-cbYellow"
+        >
+          <HiDocumentArrowDown />
+        </button>
+
             <button className="w-8 h-8 flex items-center justify-center rounded-full bg-cbYellow">
               <Image src="/filter.png" alt="Filter" width={14} height={14} />
             </button>
@@ -194,8 +226,16 @@ const ResultListPage = () => {
           </div>
         </div>
       </div>
+
+
+
+      <div id="resultSheet" className="bg-white p-4 rounded-md flex-1 m-4 mt-0">
       <Table columns={columns} renderRow={renderRow} data={filteredResults} />
+        
+      </div>
+
       <Pagination />
+
       {isFormOpen && (
         <ResultForm
           onClose={() => setIsFormOpen(false)}
