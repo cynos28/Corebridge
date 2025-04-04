@@ -127,9 +127,6 @@ const AssignmentListPage = () => {
     setIsFormOpen(false);
   };
 
-  const filteredAssignment = assignments.filter((item) =>
-    item.subjectName.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   const filteredAssignments = assignments.filter((item) =>
     item.subjectName.toLowerCase().includes(searchTerm.toLowerCase())
@@ -211,8 +208,7 @@ const AssignmentListPage = () => {
 
       {/* Assignment Sheet Container */}
       <div id="assignmentSheet" className="bg-white p-4 rounded-md flex-1 m-4 mt-0">
-        <Table columns={columns} renderRow={renderRow} data={filteredAssignments} />
-        
+        <Table columns={columns} renderRow={renderRow} data={filteredAssignments} />  
       </div>
 
       <Pagination />
