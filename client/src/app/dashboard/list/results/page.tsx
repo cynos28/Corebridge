@@ -23,9 +23,17 @@ const columns = [
   { header: "Subject Name", accessor: "subjectName" },
   { header: "Student", accessor: "student" },
   { header: "Score", accessor: "score" },
-  { header: "Teacher", accessor: "teacherName", className: "hidden md:table-cell" },
+  {
+    header: "Teacher",
+    accessor: "teacherName",
+    className: "hidden md:table-cell",
+  },
   { header: "Class", accessor: "className", className: "hidden md:table-cell" },
-  { header: "Due Date", accessor: "dueDate", className: "hidden md:table-cell" },
+  {
+    header: "Due Date",
+    accessor: "dueDate",
+    className: "hidden md:table-cell",
+  },
   { header: "Actions", accessor: "action" },
 ];
 
@@ -72,13 +80,22 @@ const ResultListPage = () => {
       });
       if (!res.ok) throw new Error("Failed to update result");
       const updated = await res.json();
-      setResults((prev) => prev.map((item) => (item._id === id ? updated : item)));
+      setResults((prev) =>
+        prev.map((item) => (item._id === id ? updated : item))
+      );
     } catch (error) {
       console.error("Error updating result:", error);
     }
   };
 
   const handleDeleteResult = async (id: string) => {
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this result?"
+    );
+    if (!confirmDelete) {
+      return; 
+    }
+
     try {
       const res = await fetch(`http://localhost:5000/api/results/${id}`, {
         method: "DELETE",
@@ -113,19 +130,30 @@ const ResultListPage = () => {
   };
 
   const renderRow = (item: Result) => (
-    <tr key={item._id} className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-cbPurpleLight">
+    <tr
+      key={item._id}
+      className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-cbPurpleLight"
+    >
       <td className="p-4">{item.subjectName}</td>
       <td>{item.student}</td>
       <td>{item.score}</td>
       <td className="hidden md:table-cell">{item.teacherName}</td>
       <td className="hidden md:table-cell">{item.className}</td>
-      <td className="hidden md:table-cell">{new Date(item.dueDate).toLocaleDateString()}</td>
+      <td className="hidden md:table-cell">
+        {new Date(item.dueDate).toLocaleDateString()}
+      </td>
       <td>
         <div className="flex items-center gap-2">
-          <button className="px-2 py-1 text-sm bg-blue-500 text-white rounded" onClick={() => openEditForm(item)}>
+          <button
+            className="px-2 py-1 text-sm bg-blue-500 text-white rounded"
+            onClick={() => openEditForm(item)}
+          >
             Edit
           </button>
-          <button className="px-2 py-1 text-sm bg-red-500 text-white rounded" onClick={() => handleDeleteResult(item._id)}>
+          <button
+            className="px-2 py-1 text-sm bg-red-500 text-white rounded"
+            onClick={() => handleDeleteResult(item._id)}
+          >
             Delete
           </button>
         </div>
@@ -147,7 +175,10 @@ const ResultListPage = () => {
               <Image src="/sort.png" alt="Sort" width={14} height={14} />
             </button>
             {(role === "admin" || role === "teacher") && (
-              <button onClick={openCreateForm} className="w-8 h-8 flex items-center justify-center rounded-full bg-cbYellow">
+              <button
+                onClick={openCreateForm}
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-cbYellow"
+              >
                 <FaPlus size={14} />
               </button>
             )}
@@ -157,7 +188,11 @@ const ResultListPage = () => {
       <Table columns={columns} renderRow={renderRow} data={results} />
       <Pagination />
       {isFormOpen && (
-        <ResultForm onClose={() => setIsFormOpen(false)} onSubmit={handleFormSubmit} editData={isEditMode ? editItem : null} />
+        <ResultForm
+          onClose={() => setIsFormOpen(false)}
+          onSubmit={handleFormSubmit}
+          editData={isEditMode ? editItem : null}
+        />
       )}
     </div>
   );
