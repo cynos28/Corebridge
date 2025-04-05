@@ -23,6 +23,7 @@ const FormModal = ({
   type,
   data,
   id,
+  role = "admin",
 }: {
   table:
     | "teacher"
@@ -37,9 +38,10 @@ const FormModal = ({
     | "attendance"
     | "event"
     | "announcement";
-  type: "create" | "update" | "delete";
+  type: "create" | "update" | "delete" | "download";
   data?: any;
   id?: number;
+  role?: string;
 }) => {
   const size = type === "create" ? "w-8 h-8" : "w-7 h-7";
   const bgColor =
@@ -68,14 +70,24 @@ const FormModal = ({
     );
   };
 
-  return (
-    <>
+  const Button = () => {
+    if (role === "student" && type !== "download") {
+      return null;
+    }
+
+    return (
       <button
         className={`${size} flex items-center justify-center rounded-full ${bgColor}`}
         onClick={() => setOpen(true)}
       >
         <Image src={`/${type}.png`} alt={`${type} icon`} width={16} height={16} />
       </button>
+    );
+  };
+
+  return (
+    <>
+      <Button />
       {open && (
         <div className="w-screen h-screen absolute left-0 top-0 bg-black bg-opacity-60 z-50 flex items-center justify-center">
           <div className="bg-white p-4 rounded-md relative w-[90%] md:w-[70%] lg:w-[60%] xl:w-[50%] 2xl:w-[40%]">
