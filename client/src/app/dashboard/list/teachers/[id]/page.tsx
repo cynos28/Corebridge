@@ -1,3 +1,6 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Announcements from "@/app/component/Announcement";
 import BigCalendar from "@/app/component/BigCalendar";
 import FormModal from "@/app/component/FormModal";
@@ -5,8 +8,35 @@ import Performance from "@/app/component/Performance";
 import { role } from "@/lib/data";
 import Image from "next/image";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 
 const SingleTeacherPage = () => {
+  const [teacher, setTeacher] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const params = useParams();
+
+  useEffect(() => {
+    const fetchTeacher = async () => {
+      try {
+        const response = await fetch(`http://localhost:5000/api/teachers/${params.id}`);
+        if (!response.ok) throw new Error('Failed to fetch teacher');
+        const data = await response.json();
+        setTeacher(data);
+      } catch (error) {
+        console.error('Error:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (params.id) {
+      fetchTeacher();
+    }
+  }, [params.id]);
+
+  if (loading) return <div>Loading...</div>;
+  if (!teacher) return <div>Teacher not found</div>;
+
   return (
     <div className="flex-1 p-4 flex flex-col gap-4 xl:flex-row">
       {/* LEFT */}
@@ -16,55 +46,48 @@ const SingleTeacherPage = () => {
           {/* USER INFO CARD */}
           <div className="bg-cbSky py-6 px-4 rounded-md flex-1 flex gap-4">
             <div className="w-1/3">
-              <Image
-                src="https://images.pexels.com/photos/2182970/pexels-photo-2182970.jpeg?auto=compress&cs=tinysrgb&w=1200"
-                alt=""
-                width={144}
-                height={144}
-                className="w-36 h-36 rounded-full object-cover"
-              />
+              {teacher.photoUrl ? (
+                <Image
+                  src={`http://localhost:5000${teacher.photoUrl}`}
+                  alt={`${teacher.firstName} ${teacher.lastName}`}
+                  width={144}
+                  height={144}
+                  className="w-36 h-36 rounded-full object-cover"
+                />
+              ) : (
+                <Image
+                  src="/default-teacher.png"
+                  alt="Default profile"
+                  width={144}
+                  height={144}
+                  className="w-36 h-36 rounded-full object-cover"
+                />
+              )}
             </div>
             <div className="w-2/3 flex flex-col justify-between gap-4">
               <div className="flex items-center gap-4">
-                <h1 className="text-xl font-semibold">Leonard Snyder</h1>
-                {role === "admin" && <FormModal
-                  table="teacher"
-                  type="update"
-                  data={{
-                    id: 1,
-                    username: "deanguerrero",
-                    email: "deanguerrero@gmail.com",
-                    password: "password",
-                    firstName: "Dean",
-                    lastName: "Guerrero",
-                    phone: "+1 234 567 89",
-                    address: "1234 Main St, Anytown, USA",
-                    bloodType: "A+",
-                    dateOfBirth: "2000-01-01",
-                    sex: "male",
-                    img: "https://images.pexels.com/photos/2182970/pexels-photo-2182970.jpeg?auto=compress&cs=tinysrgb&w=1200",
-                  }}
-                />}
+                <h1 className="text-xl font-semibold">{`${teacher.firstName} ${teacher.lastName}`}</h1>
+                {role === "admin" && <FormModal table="teacher" type="update" data={teacher} />}
               </div>
               <p className="text-sm text-gray-500">
-                Lorem ipsum, dolor sit amet consectetur adipisicing elit.
+                {teacher.subjects?.join(", ") || "No subjects assigned"}
               </p>
               <div className="flex items-center justify-between gap-2 flex-wrap text-xs font-medium">
                 <div className="w-full md:w-1/3 lg:w-full 2xl:w-1/3 flex items-center gap-2">
                   <Image src="/blood.png" alt="" width={14} height={14} />
-                  <span>A+</span>
+                  <span>{teacher.bloodType}</span>
                 </div>
                 <div className="w-full md:w-1/3 lg:w-full 2xl:w-1/3 flex items-center gap-2">
                   <Image src="/date.png" alt="" width={14} height={14} />
-                  <span>January 2025</span>
+                  <span>{new Date(teacher.birthday).toLocaleDateString()}</span>
                 </div>
                 <div className="w-full md:w-1/3 lg:w-full 2xl:w-1/3 flex items-center gap-2">
                   <Image src="/mail.png" alt="" width={14} height={14} />
-                  <span>user@gmail.com</span>
+                  <span>{teacher.email}</span>
                 </div>
                 <div className="w-full md:w-1/3 lg:w-full 2xl:w-1/3 flex items-center gap-2">
                   <Image src="/phone.png" alt="" width={14} height={14} />
-                  <span>+1 234 567</span>
+                  <span>{teacher.phone}</span>
                 </div>
               </div>
             </div>

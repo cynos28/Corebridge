@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { SignInCredentials, UserRole } from '../types/auth'
+import { setRole } from '@/lib/data'
 
 interface SignInDialogProps {
   isOpen: boolean;
@@ -21,10 +22,12 @@ export default function SignInDialog({ isOpen, onClose, onSignIn }: SignInDialog
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSignIn(credentials);
-
-    // Store the role in localStorage for role-based redirection
+    
+    // Update both localStorage and global role state
     localStorage.setItem("user-role", credentials.role);
+    setRole(credentials.role); // Use the setter function
+    
+    onSignIn(credentials);
   };
 
   return (
