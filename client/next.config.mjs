@@ -3,8 +3,16 @@ const nextConfig = {
   images: {
     remotePatterns: [
       {
-        hostname: "images.pexels.com",
+        protocol: 'https',
+        hostname: 'images.pexels.com',
+        pathname: '/photos/**',
       },
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '5000',
+        pathname: '/public/uploads/**',
+      }
     ],
   },
   async rewrites() {
