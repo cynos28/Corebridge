@@ -1,16 +1,30 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+const path = require("path");
+const fs = require("fs");
 require("dotenv").config();
+
+const app = express();
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Serve static files - Fix for image serving
+app.use('/public', express.static(path.join(__dirname, '../public')));
+
+// Create uploads directory if it doesn't exist
+const uploadDir = path.join(__dirname, '../public/uploads/teachers');
+if (!fs.existsSync(uploadDir)){
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
 
 const assignmentRoutes = require("./routes/assignmentRoutes");
 const examRoutes = require("./routes/examRoutes");
 const resultRoutes = require("./routes/resultsRoutes");
-
-const app = express();
-app.use(cors());
-app.use(express.json());
-
+const teacherRoutes = require("./routes/teacherRoutes");
 
 mongoose
   .connect(process.env.MONGODB_URI)
@@ -50,8 +64,7 @@ function startServer(retries = 3) {
 app.use("/api/assignments", assignmentRoutes);
 app.use("/api/exams", examRoutes);
 app.use("/api/results", resultRoutes);
-
-
+app.use("/api/teachers", teacherRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err.stack);

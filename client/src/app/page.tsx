@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react"
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion"
-import SignInDialog from "./components/SignInDialog"
+import SignInDialog from "./component/SignInDialog"
 import { SignInCredentials } from "./types/auth"
 
 // Animation variants for different elements
