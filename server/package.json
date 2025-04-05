@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "main": "src/index.js",
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "nodemon src/index.js"
+    "start": "node init && node src/index.js",
+    "dev": "node init && nodemon src/index.js"
   },
   "keywords": [],
   "author": "",
@@ -15,6 +15,7 @@
     "dotenv": "^16.4.7",
     "exceljs": "^4.3.0",
     "express": "^4.21.2",
+    "jspdf": "^3.0.1",
     "mongoose": "^8.12.2",
     "multer": "^1.4.5-lts.2"
   },
