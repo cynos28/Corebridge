@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const auth = require('../src/middleware/auth');
 const Admin = require('../src/models/Admin');
+const User = require('../src/models/User');
 const Teacher = require('../src/models/Teacher');
 const multer = require('multer');
 const path = require('path');
@@ -52,14 +53,37 @@ router.put('/profile', auth, upload.single('photo'), async (req, res) => {
 router.post('/new', auth, upload.single('photo'), async (req, res) => {
   try {
     const { name, email, password, description } = req.body;
+    
+    // Check if admin/user already exists
+    const existingAdmin = await Admin.findOne({ email });
+    const existingUser = await User.findOne({ email });
+    
+    if (existingAdmin || existingUser) {
+      return res.status(400).json({ message: 'Email already in use' });
+    }
+
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
+    
+    // Create user first
+    const user = new User({
+      email,
+      password: hashedPassword,
+      role: 'admin'
+    });
+    await user.save();
+
+    // Create admin with user reference
     const admin = new Admin({
       name,
       email,
       password: hashedPassword,
       description,
+      userId: user._id,
+      role: 'admin',
       photoUrl: req.file ? `/uploads/${req.file.filename}` : undefined
     });
+
     await admin.save();
     const adminResponse = admin.toObject();
     delete adminResponse.password;

@@ -1,6 +1,10 @@
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true
+  },
   email: {
     type: String,
     required: true,
@@ -13,7 +17,11 @@ const userSchema = new mongoose.Schema({
   role: {
     type: String,
     enum: ['admin', 'teacher', 'student'],
-    default: 'student'
+    required: true
+  },
+  photoUrl: {
+    type: String,
+    default: '/avatar.png'
   }
 });
 

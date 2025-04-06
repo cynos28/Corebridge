@@ -151,7 +151,7 @@ export default function AdminProfile() {
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Profile Card */}
+        {/* Admin Profile Section */}
         <div className="md:col-span-1">
           <div className="bg-white rounded-xl shadow-md p-6">
             <div className="flex flex-col items-center">
@@ -161,30 +161,57 @@ export default function AdminProfile() {
                   alt="Profile"
                   fill
                   className="rounded-full object-cover"
+                  sizes="(max-width: 128px) 100vw, 128px"
                 />
-                <button className="absolute bottom-0 right-0 bg-[#ba9df1] p-2 rounded-full">
-                  <Image src="/upload.png" alt="Upload" width={20} height={20} />
+              </div>
+              <div className="text-center">
+                <h2 className="text-2xl font-bold text-gray-800">{profile?.name}</h2>
+                <span className="inline-block px-3 py-1 bg-purple-100 text-purple-600 rounded-full text-sm font-medium mt-2">
+                  {profile?.role}
+                </span>
+                <div className="mt-4 space-y-2 text-sm">
+                  <div className="flex items-center justify-center gap-2">
+                    <svg className="w-4 h-4 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                      <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                    </svg>
+                    <span className="text-gray-600">{profile?.email}</span>
+                  </div>
+                </div>
+                <p className="mt-4 text-gray-600 text-sm">{profile?.description || 'No description available'}</p>
+              </div>
+              
+              <div className="mt-6 w-full space-y-3">
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                  Edit Profile
+                </button>
+                <button
+                  onClick={() => setNewAdmin(true)}
+                  className="w-full px-4 py-2 border border-purple-600 text-purple-600 rounded-lg hover:bg-purple-50 transition-colors"
+                >
+                  Add New Admin
                 </button>
               </div>
-              <h2 className="text-2xl font-bold">{profile?.name}</h2>
-              <span className="text-[#ba9df1] font-medium">{profile?.role}</span>
-              <p className="text-gray-600 text-center mt-2">{profile?.description}</p>
-              
-              <button
-                onClick={() => setIsEditing(true)}
-                className="mt-4 px-4 py-2 bg-[#ba9df1] text-white rounded-lg hover:bg-[#9d75eb]"
-              >
-                Edit Profile
-              </button>
             </div>
           </div>
           
-          <button
-            onClick={() => setNewAdmin(true)}
-            className="w-full mt-4 px-4 py-2 bg-[#ba9df1] text-white rounded-lg hover:bg-[#9d75eb]"
-          >
-            Add New Admin
-          </button>
+          {/* Quick Stats */}
+          <div className="mt-6 bg-white rounded-xl shadow-md p-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Quick Stats</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-center p-4 bg-purple-50 rounded-lg">
+                <div className="text-2xl font-bold text-purple-600">{teachers.length}</div>
+                <div className="text-sm text-gray-600">Teachers</div>
+              </div>
+              <div className="text-center p-4 bg-blue-50 rounded-lg">
+                <div className="text-2xl font-bold text-blue-600">Active</div>
+                <div className="text-sm text-gray-600">Status</div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Teachers List */}

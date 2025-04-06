@@ -32,7 +32,7 @@ export default function SignInDialog({ isOpen, onClose, onSignIn }: SignInDialog
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: credentials.username, // Using username as email
+          email: credentials.username,
           password: credentials.password
         }),
       });
@@ -43,21 +43,16 @@ export default function SignInDialog({ isOpen, onClose, onSignIn }: SignInDialog
         throw new Error(data.message || 'Login failed');
       }
 
-      // Store token and user info
       localStorage.setItem('token', data.token);
       localStorage.setItem('user-role', data.user.role);
+      localStorage.setItem('user-email', data.user.email);
+      localStorage.setItem('user-name', data.user.name);
       setRole(data.user.role);
 
-      if (data.user.role === 'admin') {
-        window.location.href = '/dashboard/admin';
-      } else {
-        onSignIn({
-          ...credentials,
-          role: data.user.role
-        });
-      }
+      window.location.href = `/dashboard/${data.user.role}`;
     } catch (error: any) {
       setError(error.message || 'Failed to sign in');
+      console.error('Login error:', error);
     }
   };
 
