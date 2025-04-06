@@ -1,6 +1,10 @@
+"use client";
 import Image from "next/image";
+import { useRouter } from 'next/navigation';
 
 const Navbar = () => {
+  const router = useRouter();
+
   return (
     <nav className="sticky top-0 z-10 bg-white shadow-md p-4 border-b border-gray-200">
       <div className="flex items-center justify-between">
@@ -32,7 +36,10 @@ const Navbar = () => {
             <span className="text-sm font-medium text-gray-800">John Doe</span>
             <span className="text-[10px] text-gray-500">Admin</span>
           </div>
-          <div className="cursor-pointer">
+          <div 
+            className="cursor-pointer"
+            onClick={() => router.push('/dashboard/profile/admin')}
+          >
             <Image src="/avatar.png" alt="User Avatar" width={40} height={40} className="rounded-full" />
           </div>
         </div>

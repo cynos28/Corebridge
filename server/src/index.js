@@ -27,6 +27,7 @@ const resultRoutes = require("./routes/resultsRoutes");
 const teacherRoutes = require("./routes/teacherRoutes");
 const ticketRoutes = require('./routes/ticketRoutes');
 const authRoutes = require('../routes/auth')
+const adminRoutes = require('../routes/adminRoutes');
 const { initAdmin } = require('../controllers/authController');
 
 mongoose
@@ -66,6 +67,7 @@ function startServer(retries = 3) {
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
 app.use("/api/assignments", assignmentRoutes);
 app.use("/api/exams", examRoutes);
 app.use("/api/results", resultRoutes);
