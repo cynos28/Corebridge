@@ -17,17 +17,48 @@ export default function SignInDialog({ isOpen, onClose, onSignIn }: SignInDialog
     password: '',
     role: 'student'
   });
+  const [error, setError] = useState('');
 
   const roles: UserRole[] = ['student', 'teacher', 'admin'];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     
-    // Update both localStorage and global role state
-    localStorage.setItem("user-role", credentials.role);
-    setRole(credentials.role); // Use the setter function
-    
-    onSignIn(credentials);
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: credentials.username, // Using username as email
+          password: credentials.password
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Login failed');
+      }
+
+      // Store token and user info
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user-role', data.user.role);
+      setRole(data.user.role);
+
+      if (data.user.role === 'admin') {
+        window.location.href = '/dashboard/admin';
+      } else {
+        onSignIn({
+          ...credentials,
+          role: data.user.role
+        });
+      }
+    } catch (error: any) {
+      setError(error.message || 'Failed to sign in');
+    }
   };
 
   return (
@@ -49,6 +80,11 @@ export default function SignInDialog({ isOpen, onClose, onSignIn }: SignInDialog
           >
             <h2 className="text-2xl font-bold text-[#ba9df1] mb-6">Sign In to Corebridge</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {error && (
+                <div className="bg-red-100 text-red-600 p-3 rounded-lg text-sm">
+                  {error}
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Username/ID</label>
                 <input

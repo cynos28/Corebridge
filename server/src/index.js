@@ -26,6 +26,8 @@ const examRoutes = require("./routes/examRoutes");
 const resultRoutes = require("./routes/resultsRoutes");
 const teacherRoutes = require("./routes/teacherRoutes");
 const ticketRoutes = require('./routes/ticketRoutes');
+const authRoutes = require('../routes/auth')
+const { initAdmin } = require('../controllers/authController');
 
 mongoose
   .connect(process.env.MONGODB_URI)
@@ -62,11 +64,18 @@ function startServer(retries = 3) {
     });
 }
 
+// Routes
+app.use('/api/auth', authRoutes);
 app.use("/api/assignments", assignmentRoutes);
 app.use("/api/exams", examRoutes);
 app.use("/api/results", resultRoutes);
 app.use("/api/teachers", teacherRoutes);
 app.use('/api/tickets', ticketRoutes);
+
+// Initialize admin user after DB connection
+mongoose.connection.once('open', () => {
+  initAdmin();
+});
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
