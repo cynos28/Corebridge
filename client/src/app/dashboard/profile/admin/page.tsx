@@ -94,7 +94,7 @@ export default function AdminProfile() {
       const response = await fetch('http://localhost:5000/api/admin/profile', {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
         },
         body: formData
       });
@@ -120,12 +120,32 @@ export default function AdminProfile() {
         body: formData
       });
       
-      if (!response.ok) throw new Error('Failed to create admin');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to create admin');
+      }
       
+      const newAdmin = await response.json();
       setNewAdmin(false);
-    } catch (error) {
+      // Optionally refresh the admin list or show success message
+    } catch (error: any) {
       console.error('Error creating admin:', error);
+      // Optionally show error message to user
     }
+  };
+
+  const handleProfileUpdate = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    updateProfile(formData);
+  };
+
+  const handleNewAdmin = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    addNewAdmin(formData);
   };
 
   return (
@@ -200,7 +220,48 @@ export default function AdminProfile() {
           className="fixed inset-0 bg-black/50 flex items-center justify-center"
         >
           <div className="bg-white rounded-xl p-6 w-full max-w-md">
-            {/* Add your edit form here */}
+            <form onSubmit={handleProfileUpdate} className="space-y-4">
+              <input
+                type="text"
+                name="name"
+                defaultValue={profile?.name}
+                placeholder="Name"
+                className="w-full p-2 border rounded"
+              />
+              <input
+                type="email"
+                name="email"
+                defaultValue={profile?.email}
+                placeholder="Email"
+                className="w-full p-2 border rounded"
+              />
+              <textarea
+                name="description"
+                defaultValue={profile?.description}
+                placeholder="Description"
+                className="w-full p-2 border rounded"
+              />
+              <input
+                type="file"
+                name="photo"
+                className="w-full p-2 border rounded"
+              />
+              <div className="flex gap-2 justify-end">
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(false)}
+                  className="px-4 py-2 border rounded"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-[#ba9df1] text-white rounded"
+                >
+                  Save
+                </button>
+              </div>
+            </form>
           </div>
         </motion.div>
       )}
@@ -213,7 +274,54 @@ export default function AdminProfile() {
           className="fixed inset-0 bg-black/50 flex items-center justify-center"
         >
           <div className="bg-white rounded-xl p-6 w-full max-w-md">
-            {/* Add your new admin form here */}
+            <form onSubmit={handleNewAdmin} className="space-y-4">
+              <input
+                type="text"
+                name="name"
+                placeholder="Name"
+                className="w-full p-2 border rounded"
+                required
+              />
+              <input
+                type="email"
+                name="email"
+                placeholder="Email"
+                className="w-full p-2 border rounded"
+                required
+              />
+              <input
+                type="password"
+                name="password"
+                placeholder="Password"
+                className="w-full p-2 border rounded"
+                required
+              />
+              <textarea
+                name="description"
+                placeholder="Description"
+                className="w-full p-2 border rounded"
+              />
+              <input
+                type="file"
+                name="photo"
+                className="w-full p-2 border rounded"
+              />
+              <div className="flex gap-2 justify-end">
+                <button
+                  type="button"
+                  onClick={() => setNewAdmin(false)}
+                  className="px-4 py-2 border rounded"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-[#ba9df1] text-white rounded"
+                >
+                  Create
+                </button>
+              </div>
+            </form>
           </div>
         </motion.div>
       )}
