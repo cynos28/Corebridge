@@ -6,7 +6,7 @@ const {
   createTeacher,
   updateTeacher,
   deleteTeacher
-} = require('../controllers/teacherController');
+} = require('../src/controllers/teacherController');
 
 // Get all teachers
 router.get('/', getTeachers);
