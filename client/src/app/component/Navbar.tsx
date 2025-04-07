@@ -11,17 +11,7 @@ const Navbar = () => {
     const fetchUserProfile = async () => {
       try {
         const token = localStorage.getItem('token');
-        const role = localStorage.getItem('user-role');
-        const id = localStorage.getItem('user-id');
-
-        let url = 'http://localhost:5000/api';
-        if (role === 'admin') {
-          url += '/admin/profile';
-        } else if (role === 'teacher') {
-          url += `/teachers/${id}`;
-        }
-
-        const response = await fetch(url, {
+        const response = await fetch('http://localhost:5000/api/admin/profile', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -44,20 +34,6 @@ const Navbar = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user-role');
     router.push('/');
-  };
-
-  const getProfilePath = () => {
-    const role = localStorage.getItem('user-role');
-    const id = localStorage.getItem('user-id');
-    
-    if (role === 'admin') {
-      return '/dashboard/profile/admin';
-    } else if (role === 'teacher') {
-      return `/dashboard/profile/teacher/${id}`;
-    } else if (role === 'student') {
-      return `/dashboard/profile/student/${id}`;
-    }
-    return '/';
   };
 
   return (
@@ -94,7 +70,7 @@ const Navbar = () => {
             <div className="relative group">
               <div 
                 className="cursor-pointer"
-                onClick={() => router.push(getProfilePath())}
+                onClick={() => router.push('/dashboard/profile/admin')}
               >
                 <Image 
                   src={user?.photoUrl || "/avatar.png"} 
@@ -106,7 +82,7 @@ const Navbar = () => {
               </div>
               <div className="hidden group-hover:block absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1">
                 <button
-                  onClick={() => router.push(getProfilePath())}
+                  onClick={() => router.push('/dashboard/profile/admin')}
                   className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                 >
                   Profile

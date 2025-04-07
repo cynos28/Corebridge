@@ -1,90 +1,74 @@
-const Teacher = require('../models/Teacher');
-const bcrypt = require('bcryptjs');
+const Teacher = require("../models/Teacher");
+const path = require('path');
+const fs = require('fs');
 
 // Get all teachers
 exports.getTeachers = async (req, res) => {
   try {
-    const teachers = await Teacher.find().select('-password');
-    res.json(teachers);
+    const teachers = await Teacher.find();
+    res.status(200).json(teachers);
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching teachers', error: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
 
 // Get single teacher
 exports.getTeacher = async (req, res) => {
   try {
-    const teacher = await Teacher.findById(req.params.id).select('-password');
+    const teacher = await Teacher.findById(req.params.id);
     if (!teacher) {
       return res.status(404).json({ message: 'Teacher not found' });
     }
-    res.json(teacher);
+    res.status(200).json(teacher);
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching teacher', error: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
 
 // Create teacher
 exports.createTeacher = async (req, res) => {
   try {
-    // Check if username or email already exists
-    const existingTeacher = await Teacher.findOne({
-      $or: [{ username: req.body.username }, { email: req.body.email }]
-    });
-
-    if (existingTeacher) {
-      return res.status(400).json({
-        message: 'Username or email already exists'
-      });
-    }
-
-    // Hash password
-    const hashedPassword = await bcrypt.hash(req.body.password, 10);
+    const teacherData = req.body;
     
-    // Handle file upload
-    let photoUrl = undefined;
     if (req.file) {
-      photoUrl = `/uploads/teachers/${req.file.filename}`;
+      // Update image URL to include /public prefix
+      teacherData.photoUrl = `/public/uploads/teachers/${req.file.filename}`;
     }
 
-    const teacher = new Teacher({
-      ...req.body,
-      password: hashedPassword,
-      birthday: new Date(req.body.birthday),
-      photoUrl
-    });
-
-    const savedTeacher = await teacher.save();
-    const teacherResponse = savedTeacher.toObject();
-    delete teacherResponse.password;
+    const teacher = new Teacher(teacherData);
+    await teacher.save();
     
-    res.status(201).json(teacherResponse);
+    res.status(201).json(teacher);
   } catch (error) {
     console.error('Error creating teacher:', error);
-    res.status(400).json({ message: 'Error creating teacher', error: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
 
 // Update teacher
 exports.updateTeacher = async (req, res) => {
   try {
-    const updateData = { ...req.body };
-    
-    // Handle file upload
-    if (req.file) {
-      updateData.photoUrl = `/public/uploads/teachers/${req.file.filename}`;
-    }
+    const updateData = req.body;
 
-    // Convert birthday string to Date if provided
-    if (updateData.birthday) {
-      updateData.birthday = new Date(updateData.birthday);
+    if (req.file) {
+      // Update image URL to include /public prefix
+      updateData.photoUrl = `/public/uploads/teachers/${req.file.filename}`;
+      
+      // Delete old image if exists
+      const oldTeacher = await Teacher.findById(req.params.id);
+      if (oldTeacher?.photoUrl) {
+        const oldImagePath = path.join(__dirname, '../../public', oldTeacher.photoUrl);
+        if (fs.existsSync(oldImagePath)) {
+          fs.unlinkSync(oldImagePath);
+        }
+      }
     }
 
     const teacher = await Teacher.findByIdAndUpdate(
       req.params.id,
       updateData,
-      { new: true, runValidators: true }
-    ).select('-password');
+      { new: true }
+    );
 
     if (!teacher) {
       return res.status(404).json({ message: 'Teacher not found' });
@@ -93,19 +77,19 @@ exports.updateTeacher = async (req, res) => {
     res.json(teacher);
   } catch (error) {
     console.error('Error updating teacher:', error);
-    res.status(400).json({ message: 'Error updating teacher', error: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
 
 // Delete teacher
 exports.deleteTeacher = async (req, res) => {
   try {
-    const teacher = await Teacher.findByIdAndDelete(req.params.id);
-    if (!teacher) {
+    const deletedTeacher = await Teacher.findByIdAndDelete(req.params.id);
+    if (!deletedTeacher) {
       return res.status(404).json({ message: 'Teacher not found' });
     }
     res.json({ message: 'Teacher deleted successfully' });
   } catch (error) {
-    res.status(500).json({ message: 'Error deleting teacher', error: error.message });
+    res.status(500).json({ message: error.message });
   }
 };

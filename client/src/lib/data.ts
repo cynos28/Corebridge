@@ -1,18 +1,10 @@
 // TEMPORARY DATA
 
-let currentRole = 'teacher';
-
-// Only access localStorage on the client side
-if (typeof window !== 'undefined') {
-  currentRole = localStorage.getItem('user-role') || 'teacher';
-}
+let currentRole = "student";
 
 export const role = currentRole;
 export const setRole = (newRole: string) => {
   currentRole = newRole;
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('user-role', newRole);
-  }
 };
 
 export const teachersData = [

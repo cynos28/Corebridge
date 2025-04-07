@@ -2,48 +2,17 @@ const jwt = require('jsonwebtoken');
 
 const auth = (req, res, next) => {
   try {
-    // Check if Authorization header exists
-    const authHeader = req.header('Authorization');
-    if (!authHeader) {
-      return res.status(401).json({ 
-        status: 'error',
-        message: 'No auth token, authorization denied' 
-      });
-    }
-
-    // Extract token
-    const token = authHeader.replace('Bearer ', '');
-    if (!token) {
-      return res.status(401).json({
-        status: 'error',
-        message: 'Authorization token is required'
-      });
-    }
+    const token = req.header('Authorization')?.replace('Bearer ', '');
     
-    try {
-      // Verify token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      
-      // Add user info to request
-      req.user = {
-        userId: decoded.userId,
-        role: decoded.role,
-        email: decoded.email
-      };
-
-      next();
-    } catch (jwtError) {
-      return res.status(401).json({
-        status: 'error',
-        message: 'Invalid or expired token'
-      });
+    if (!token) {
+      return res.status(401).json({ message: 'No token, authorization denied' });
     }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
   } catch (error) {
-    console.error('Auth middleware error:', error);
-    res.status(500).json({ 
-      status: 'error',
-      message: 'Internal server error during authentication'
-    });
+    res.status(401).json({ message: 'Token is not valid' });
   }
 };
 
