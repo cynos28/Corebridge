@@ -33,7 +33,8 @@ export default function SignInDialog({ isOpen, onClose, onSignIn }: SignInDialog
         },
         body: JSON.stringify({
           email: credentials.username,
-          password: credentials.password
+          password: credentials.password,
+          role: credentials.role
         }),
       });
 
@@ -43,13 +44,26 @@ export default function SignInDialog({ isOpen, onClose, onSignIn }: SignInDialog
         throw new Error(data.message || 'Login failed');
       }
 
+      // Store auth data
       localStorage.setItem('token', data.token);
       localStorage.setItem('user-role', data.user.role);
+      localStorage.setItem('user-id', data.user._id);
       localStorage.setItem('user-email', data.user.email);
-      localStorage.setItem('user-name', data.user.name);
+      localStorage.setItem('user-name', 
+        data.user.firstName && data.user.lastName 
+          ? `${data.user.firstName} ${data.user.lastName}`
+          : data.user.name || ''
+      );
       setRole(data.user.role);
 
-      window.location.href = `/dashboard/${data.user.role}`;
+      // Redirect based on role
+      if (data.user.role === 'admin') {
+        window.location.href = '/dashboard/admin';
+      } else if (data.user.role === 'teacher') {
+        window.location.href = '/dashboard/teacher';
+      } else {
+        window.location.href = `/dashboard/${data.user.role}`;
+      }
     } catch (error: any) {
       setError(error.message || 'Failed to sign in');
       console.error('Login error:', error);
