@@ -56,7 +56,7 @@ const SingleTeacherPage = () => {
                 />
               ) : (
                 <Image
-                  src="/default-teacher.png"
+                  src="/images/default/teacher.png"  // Updated path
                   alt="Default profile"
                   width={144}
                   height={144}

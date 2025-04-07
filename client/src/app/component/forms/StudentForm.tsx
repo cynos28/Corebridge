@@ -4,25 +4,19 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import InputField from "../InputField";
-import Image from "next/image";
+import { useState } from "react";
 
 const schema = z.object({
-  username: z
-    .string()
-    .min(3, { message: "Username must be at least 3 characters long!" })
-    .max(20, { message: "Username must be at most 20 characters long!" }),
-  email: z.string().email({ message: "Invalid email address!" }),
-  password: z
-    .string()
-    .min(8, { message: "Password must be at least 8 characters long!" }),
-  firstName: z.string().min(1, { message: "First name is required!" }),
-  lastName: z.string().min(1, { message: "Last name is required!" }),
-  phone: z.string().min(1, { message: "Phone is required!" }),
-  address: z.string().min(1, { message: "Address is required!" }),
-  bloodType: z.string().min(1, { message: "Blood Type is required!" }),
-  birthday: z.date({ message: "Birthday is required!" }),
-  sex: z.enum(["male", "female"], { message: "Sex is required!" }),
-  img: z.instanceof(File, { message: "Image is required" }),
+  username: z.string().min(3).max(20),
+  email: z.string().email(),
+  password: z.string().min(8),
+  firstName: z.string().min(1),
+  lastName: z.string().min(1),
+  phone: z.string().min(1),
+  address: z.string().min(1),
+  grade: z.coerce.number().min(1).max(12), // Convert string input to number
+  class: z.string().min(1),
+  sex: z.enum(["male", "female"])
 });
 
 type Inputs = z.infer<typeof schema>;
@@ -30,134 +24,181 @@ type Inputs = z.infer<typeof schema>;
 const StudentForm = ({
   type,
   data,
+  onSuccess,
+  onClose,
 }: {
   type: "create" | "update";
   data?: any;
+  onSuccess?: () => void;
+  onClose?: () => void;
 }) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+
   const {
     register,
     handleSubmit,
     formState: { errors },
+    reset,
   } = useForm<Inputs>({
     resolver: zodResolver(schema),
+    defaultValues: data,
   });
 
-  const onSubmit = handleSubmit((data) => {
-    console.log(data);
-  });
+  const onSubmit = async (formData: Inputs) => {
+    try {
+      setIsLoading(true);
+      setError("");
+
+      const token = localStorage.getItem('token');
+      const url = `http://localhost:5000/api/students${type === "update" ? `/${data?._id}` : ""}`;
+      
+      const response = await fetch(url, {
+        method: type === "create" ? "POST" : "PUT",
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          ...formData,
+          // Only include password for new students
+          password: type === "create" ? formData.password : undefined
+        }),
+      });
+
+      const responseData = await response.json();
+      if (!response.ok) {
+        throw new Error(responseData.message || `Error: ${response.status}`);
+      }
+
+      if (onSuccess) onSuccess();
+      if (onClose) onClose();
+      
+      // Reset form after successful submission
+      if (type === "create") {
+        reset();
+      }
+
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Failed to submit form");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
-    <form className="flex flex-col gap-8" onSubmit={onSubmit}>
-      <h1 className="text-xl font-semibold">Create a new student</h1>
-      <span className="text-xs text-gray-400 font-medium">
-        Authentication Information
-      </span>
-      <div className="flex justify-between flex-wrap gap-4">
-        <InputField
-          label="Username"
-          name="username"
-          defaultValue={data?.username}
-          register={register}
-          error={errors?.username}
-        />
-        <InputField
-          label="Email"
-          name="email"
-          defaultValue={data?.email}
-          register={register}
-          error={errors?.email}
-        />
-        <InputField
-          label="Password"
-          name="password"
-          type="password"
-          defaultValue={data?.password}
-          register={register}
-          error={errors?.password}
-        />
-      </div>
-      <span className="text-xs text-gray-400 font-medium">
-        Personal Information
-      </span>
-      <div className="flex justify-between flex-wrap gap-4">
-        <InputField
-          label="First Name"
-          name="firstName"
-          defaultValue={data?.firstName}
-          register={register}
-          error={errors.firstName}
-        />
-        <InputField
-          label="Last Name"
-          name="lastName"
-          defaultValue={data?.lastName}
-          register={register}
-          error={errors.lastName}
-        />
-        <InputField
-          label="Phone"
-          name="phone"
-          defaultValue={data?.phone}
-          register={register}
-          error={errors.phone}
-        />
-        <InputField
-          label="Address"
-          name="address"
-          defaultValue={data?.address}
-          register={register}
-          error={errors.address}
-        />
-        <InputField
-          label="Blood Type"
-          name="bloodType"
-          defaultValue={data?.bloodType}
-          register={register}
-          error={errors.bloodType}
-        />
-        <InputField
-          label="Birthday"
-          name="birthday"
-          defaultValue={data?.birthday}
-          register={register}
-          error={errors.birthday}
-          type="date"
-        />
-        <div className="flex flex-col gap-2 w-full md:w-1/4">
-          <label className="text-xs text-gray-500">Sex</label>
-          <select
-            className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
-            {...register("sex")}
-            defaultValue={data?.sex}
-          >
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-          </select>
-          {errors.sex?.message && (
-            <p className="text-xs text-red-400">
-              {errors.sex.message.toString()}
-            </p>
+    <form className="flex flex-col gap-8" onSubmit={handleSubmit(onSubmit)}>
+      <h1 className="text-xl font-semibold">{type === "create" ? "Add new student" : "Update student"}</h1>
+      
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md">
+          {error}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-4">
+          <InputField
+            label="Username"
+            name="username"
+            register={register}
+            error={errors.username?.message}
+          />
+          <InputField
+            label="Email"
+            type="email"
+            name="email"
+            register={register}
+            error={errors.email?.message}
+          />
+          {type === "create" && (
+            <InputField
+              label="Password"
+              type="password"
+              name="password"
+              register={register}
+              error={errors.password?.message}
+            />
           )}
         </div>
-        <div className="flex flex-col gap-2 w-full md:w-1/4 justify-center">
-          <label
-            className="text-xs text-gray-500 flex items-center gap-2 cursor-pointer"
-            htmlFor="img"
-          >
-            <Image src="/upload.png" alt="" width={28} height={28} />
-            <span>Upload a photo</span>
-          </label>
-          <input type="file" id="img" {...register("img")} className="hidden" />
-          {errors.img?.message && (
-            <p className="text-xs text-red-400">
-              {errors.img.message.toString()}
-            </p>
-          )}
+
+        <div className="space-y-4">
+          <InputField
+            label="First Name"
+            name="firstName"
+            register={register}
+            error={errors.firstName?.message}
+          />
+          <InputField
+            label="Last Name"
+            name="lastName"
+            register={register}
+            error={errors.lastName?.message}
+          />
+          <InputField
+            label="Phone"
+            name="phone"
+            register={register}
+            error={errors.phone?.message}
+          />
+        </div>
+
+        <div className="space-y-4">
+          <InputField
+            label="Grade"
+            type="number"
+            name="grade"
+            register={register}
+            error={errors.grade?.message}
+          />
+          <InputField
+            label="Class"
+            name="class"
+            register={register}
+            error={errors.class?.message}
+          />
+        </div>
+
+        <div className="space-y-4">
+          <InputField
+            label="Address"
+            name="address"
+            register={register}
+            error={errors.address?.message}
+          />
+          <div className="flex flex-col gap-2">
+            <label className="text-sm text-gray-600">Sex</label>
+            <select
+              {...register("sex")}
+              className="ring-1 ring-purple-200 rounded-md p-2"
+            >
+              <option value="">Select Sex</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select>
+            {errors.sex && (
+              <span className="text-xs text-red-500">{errors.sex.message}</span>
+            )}
+          </div>
         </div>
       </div>
-      <button className="bg-blue-400 text-white p-2 rounded-md">
-        {type === "create" ? "Create" : "Update"}
-      </button>
+
+      <div className="flex justify-end gap-3">
+        <button
+          type="button"
+          onClick={onClose}
+          className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:bg-gray-300"
+        >
+          {isLoading ? "Processing..." : type === "create" ? "Add Student" : "Update Student"}
+        </button>
+      </div>
     </form>
   );
 };

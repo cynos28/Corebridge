@@ -107,16 +107,19 @@ const TeacherListPage = () => {
           <div className="relative w-12 h-12">
             {teacher.photoUrl ? (
               <Image
-                src={`http://localhost:5000${teacher.photoUrl}`}
+                src={`http://localhost:5000${teacher.photoUrl}`} // This path should now work
                 alt={`${teacher.firstName} ${teacher.lastName}`}
                 fill
                 className="rounded-full object-cover"
                 sizes="(max-width: 48px) 100vw, 48px"
                 priority
+                onError={(e: any) => {
+                  e.target.src = '/images/default/teacher.png';
+                }}
               />
             ) : (
               <Image
-                src="/default-teacher.png"
+                src="/images/default/teacher.png"  // Updated path
                 alt="Default profile"
                 fill
                 className="rounded-full object-cover"
