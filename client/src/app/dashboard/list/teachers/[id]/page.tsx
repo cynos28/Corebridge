@@ -18,7 +18,20 @@ const SingleTeacherPage = () => {
   useEffect(() => {
     const fetchTeacher = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/teachers/${params.id}`);
+        const token = localStorage.getItem('token');
+        const response = await fetch(`http://localhost:5000/api/teachers/${params.id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.status === 401) {
+          localStorage.removeItem('token');
+          // You may want to redirect to login page here
+          return;
+        }
+
         if (!response.ok) throw new Error('Failed to fetch teacher');
         const data = await response.json();
         setTeacher(data);

@@ -10,7 +10,7 @@ const {
   deleteTeacher
 } = require('../controllers/teacherController');
 
-// Define routes
+// Define routes with auth and upload middleware
 router.get('/', auth, getTeachers);
 router.get('/:id', auth, getTeacher);
 router.post('/', auth, upload.single('photo'), createTeacher);

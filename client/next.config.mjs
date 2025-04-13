@@ -19,7 +19,7 @@ const nextConfig = {
   async rewrites() {
     return [
       {
-        source: "/dashboard/:path*",
+        source: "/:path*", 
         destination: "/dashboard/:path*",
       },
     ];

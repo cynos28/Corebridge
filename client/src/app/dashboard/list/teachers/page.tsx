@@ -43,7 +43,20 @@ const TeacherListPage = () => {
   // Fetch teachers from the backend API
   const fetchTeachers = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/teachers");
+      const token = localStorage.getItem('token');
+      const res = await fetch("http://localhost:5000/api/teachers", {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (res.status === 401) {
+        localStorage.removeItem('token');
+        // You may want to redirect to login page here
+        return;
+      }
+
       if (!res.ok) {
         throw new Error("Failed to fetch teachers");
       }
@@ -58,9 +71,20 @@ const TeacherListPage = () => {
 
   const handleDelete = async (id: string) => {
     try {
+      const token = localStorage.getItem('token');
       const response = await fetch(`http://localhost:5000/api/teachers/${id}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
+
+      if (response.status === 401) {
+        localStorage.removeItem('token');
+        // You may want to redirect to login page here
+        return;
+      }
 
       if (!response.ok) {
         throw new Error('Failed to delete teacher');
