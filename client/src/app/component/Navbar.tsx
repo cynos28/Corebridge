@@ -70,14 +70,16 @@ const Navbar = () => {
     const role = localStorage.getItem('user-role');
     const id = localStorage.getItem('user-id');
     
-    if (role === 'admin') {
-      return '/dashboard/profile/admin';
-    } else if (role === 'teacher') {
-      return `/dashboard/profile/teacher/${id}`;
-    } else if (role === 'student') {
-      return `/dashboard/profile/student/${id}`;
+    switch(role) {
+      case 'admin':
+        return '/dashboard/profile/admin';
+      case 'teacher':
+        return `/list/teachers/${id}`; // Changed to match list structure
+      case 'student':
+        return `/dashboard/list/students/${id}`;
+      default:
+        return '/';
     }
-    return '/';
   };
 
   return (
