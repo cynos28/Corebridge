@@ -74,9 +74,9 @@ const Navbar = () => {
       case 'admin':
         return '/dashboard/profile/admin';
       case 'teacher':
-        return `/list/teachers/${id}`; // Changed to match list structure
+        return `/profile/teacher/${id}`;
       case 'student':
-        return `/dashboard/list/students/${id}`;
+        return `/profile/student/${id}`; // Updated path
       default:
         return '/';
     }

@@ -4,7 +4,7 @@ let currentRole = 'teacher';
 
 // Only access localStorage on the client side
 if (typeof window !== 'undefined') {
-  currentRole = localStorage.getItem('user-role') || 'teacher';
+  currentRole = localStorage.getItem('user-role') || 'teacher' || 'student';
 }
 
 export const role = currentRole;

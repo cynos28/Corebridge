@@ -8,6 +8,7 @@ import { role, studentsData } from "@/lib/data";
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 
 type Student = {
   _id: string;
@@ -67,6 +68,7 @@ const StudentListPage = () => {
       const token = localStorage.getItem('token');
       
       if (!token) {
+        toast.error('Authentication token not found');
         throw new Error('No authentication token found');
       }
 
@@ -80,13 +82,15 @@ const StudentListPage = () => {
         cache: 'no-store'
       });
 
-      let data;
-      const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('application/json')) {
-        data = await response.json();
-      } else {
-        throw new Error('Invalid response format from server');
+      if (response.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user-role');
+        localStorage.removeItem('user-id');
+        window.location.href = '/';
+        throw new Error('Authentication expired');
       }
+
+      const data = await response.json();
       
       if (!response.ok) {
         throw new Error(data.message || `HTTP error! status: ${response.status}`);
@@ -95,13 +99,17 @@ const StudentListPage = () => {
       setStudents(data);
       setError(null);
     } catch (error: any) {
+      const message = error.message || 'Failed to load students';
       console.error('Error fetching students:', error);
-      setError(error.message || 'Failed to load students');
+      setError(message);
+      toast.error(message);
       setStudents([]);
       
       // Handle auth errors
       if (error.message.includes('authentication') || error.status === 401) {
         localStorage.removeItem('token');
+        localStorage.removeItem('user-role');
+        localStorage.removeItem('user-id');
         window.location.href = '/';
       }
     } finally {

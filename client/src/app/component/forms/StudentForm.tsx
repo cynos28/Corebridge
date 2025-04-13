@@ -5,18 +5,21 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import InputField from "../InputField";
 import { useState } from "react";
+import { toast } from "sonner";
 
 const schema = z.object({
-  username: z.string().min(3).max(20),
-  email: z.string().email(),
-  password: z.string().min(8).optional(), // Make password optional for updates
-  firstName: z.string().min(1),
-  lastName: z.string().min(1),
-  phone: z.string().min(1),
-  address: z.string().min(1),
-  grade: z.coerce.number().min(1).max(12), // Convert string input to number
-  class: z.string().min(1),
-  sex: z.enum(["male", "female"])
+  username: z.string().min(3, "Username must be at least 3 characters").max(20),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters").optional(),
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  phone: z.string().min(1, "Phone number is required"),
+  address: z.string().min(1, "Address is required"),
+  grade: z.coerce.number().min(1).max(12),
+  class: z.string().min(1, "Class is required"),
+  sex: z.enum(["male", "female"], {
+    required_error: "Please select a gender",
+  })
 });
 
 type Inputs = z.infer<typeof schema>;
@@ -61,11 +64,25 @@ const StudentForm = ({
       setError("");
 
       const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const userId = localStorage.getItem('user-id');
+      if (!userId) {
+        throw new Error('No user ID found');
+      }
+
+      const payload = {
+        ...formData,
+        userId, // Add userId to the payload
+      };
+
       const url = `http://localhost:5000/api/students${type === "update" ? `/${data?._id}` : ""}`;
       
       // Remove password field if it's empty or if updating
-      if (type === "update" || !formData.password) {
-        delete formData.password;
+      if (type === "update" || !payload.password) {
+        delete payload.password;
       }
 
       const response = await fetch(url, {
@@ -74,28 +91,33 @@ const StudentForm = ({
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(formData),
-        cache: 'no-store' // Prevent caching
+        body: JSON.stringify(payload),
+        cache: 'no-store'
       });
 
+      const responseData = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        throw new Error(responseData.message || 'Failed to process request');
       }
 
-      const responseData = await response.json();
+      toast.success(
+        type === "create" 
+          ? "Student created successfully" 
+          : "Student updated successfully"
+      );
       
-      // Call onSuccess before closing modal
       if (onSuccess) await onSuccess();
       if (onClose) onClose();
       
-      // Reset form after successful submission
       if (type === "create") {
         reset();
       }
 
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Failed to submit form");
+      const message = error instanceof Error ? error.message : "Failed to submit form";
+      setError(message);
+      toast.error(message);
       console.error('Form submission error:', error);
     } finally {
       setIsLoading(false);

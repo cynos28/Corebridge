@@ -3,14 +3,13 @@ const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const Teacher = require('../models/Teacher');
 const Admin = require('../models/Admin');
+const Student = require('../models/Student'); // Add Student model
 
 exports.login = async (req, res) => {
   try {
     const { email, password, role } = req.body;
 
     let user;
-    let additionalData;
-
     // Find user based on role
     switch (role) {
       case 'teacher':
@@ -18,6 +17,9 @@ exports.login = async (req, res) => {
         break;
       case 'admin':
         user = await Admin.findOne({ email });
+        break;
+      case 'student':
+        user = await Student.findOne({ email });
         break;
       default:
         return res.status(400).json({ message: 'Invalid role' });
@@ -41,11 +43,7 @@ exports.login = async (req, res) => {
     };
 
     // Generate token
-    const token = jwt.sign(
-      payload,
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
-    );
+    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '24h' });
 
     // Remove password from response
     const userResponse = user.toObject();
@@ -58,6 +56,7 @@ exports.login = async (req, res) => {
         role
       }
     });
+
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ message: 'Server error' });
