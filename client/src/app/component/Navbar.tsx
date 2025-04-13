@@ -14,6 +14,11 @@ const Navbar = () => {
         const role = localStorage.getItem('user-role');
         const id = localStorage.getItem('user-id');
 
+        if (!token || !role || !id) {
+          router.push('/');
+          return;
+        }
+
         let url = 'http://localhost:5000/api';
         if (role === 'admin') {
           url += '/admin/profile';
@@ -30,7 +35,22 @@ const Navbar = () => {
         
         if (response.ok) {
           const data = await response.json();
-          setUser(data);
+          // Format display name based on role
+          const displayName = role === 'teacher' ? 
+            `${data.firstName} ${data.lastName}` : 
+            data.name;
+          
+          setUser({
+            ...data,
+            displayName,
+            role: role.charAt(0).toUpperCase() + role.slice(1),
+            photoUrl: data.photoUrl ? `http://localhost:5000${data.photoUrl}` : '/avatar.png'
+          });
+        } else if (response.status === 401) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user-role');
+          localStorage.removeItem('user-id');
+          router.push('/');
         }
       } catch (error) {
         console.error('Error fetching user profile:', error);
@@ -38,7 +58,7 @@ const Navbar = () => {
     };
 
     fetchUserProfile();
-  }, []);
+  }, [router]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');

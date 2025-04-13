@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import BigCalendar from "@/app/component/BigCalendar";
 import Performance from "@/app/component/Performance";
@@ -24,6 +24,7 @@ interface Teacher {
 }
 
 const TeacherProfilePage = () => {
+  const router = useRouter();
   const [teacher, setTeacher] = useState<Teacher | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -33,12 +34,48 @@ const TeacherProfilePage = () => {
   const params = useParams();
 
   useEffect(() => {
-    fetchTeacher();
-  }, [params.id]);
+    if (!params?.id) {
+      setError('No teacher ID provided');
+      setLoading(false);
+      return;
+    }
+    
+    const checkAuth = async () => {
+      const token = localStorage.getItem('token');
+      const role = localStorage.getItem('user-role');
+      const userId = localStorage.getItem('user-id');
+
+      if (!token || !role || !userId) {
+        router.push('/');
+        return;
+      }
+
+      // Only allow teachers to view their own profile or admins to view any profile
+      if (role === 'teacher' && userId !== params.id) {
+        router.push('/dashboard');
+        return;
+      }
+
+      await fetchTeacher();
+    };
+
+    checkAuth();
+  }, [params?.id, router]);
 
   const fetchTeacher = async () => {
     try {
       const token = localStorage.getItem('token');
+      if (!token) {
+        router.push('/');
+        return;
+      }
+
+      const role = localStorage.getItem('user-role');
+      if (role !== 'teacher' && role !== 'admin') {
+        router.push('/');
+        return;
+      }
+
       const response = await fetch(`http://localhost:5000/api/teachers/${params.id}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -46,6 +83,14 @@ const TeacherProfilePage = () => {
         }
       });
       
+      if (response.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user-role');
+        localStorage.removeItem('user-id');
+        router.push('/');
+        return;
+      }
+
       if (!response.ok) throw new Error('Failed to fetch teacher');
       const data = await response.json();
       setTeacher(data);

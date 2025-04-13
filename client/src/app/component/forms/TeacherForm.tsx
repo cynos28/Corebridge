@@ -26,17 +26,14 @@ type Inputs = z.infer<typeof schema>;
 
 const bloodTypes = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
-const TeacherForm = ({
-  type,
-  data,
-  onSuccess,
-  onClose,
-}: {
+interface TeacherFormProps {
   type: "create" | "update";
   data?: any;
   onSuccess?: () => void;
   onClose?: () => void;
-}) => {
+}
+
+const TeacherForm = ({ type, data, onSuccess, onClose }: TeacherFormProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [subjects, setSubjects] = useState<string[]>(data?.subjects || []);
@@ -81,25 +78,39 @@ const TeacherForm = ({
       setIsLoading(true);
       setError("");
 
+      // Get auth token
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+
       const submitData = new FormData();
+
+      // Handle basic fields
       Object.keys(formData).forEach(key => {
-        submitData.append(key, formData[key]);
+        if (formData[key] !== undefined && key !== 'subjects') {
+          submitData.append(key, formData[key]);
+        }
       });
 
-      // Append subjects
+      // Handle subjects array
       subjects.forEach(subject => {
         submitData.append('subjects[]', subject);
       });
 
-      // Append image if selected
+      // Handle image upload
       if (selectedImage) {
         submitData.append('photo', selectedImage);
       }
 
-      const url = "http://localhost:5000/api/teachers" + (type === "update" ? `/${data._id}` : "");
+      const url = "http://localhost:5000/api/teachers" + (type === "update" ? `/${data?._id}` : "");
       const res = await fetch(url, {
         method: type === "create" ? "POST" : "PUT",
-        body: submitData, // Send as FormData
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          // Do not set Content-Type when using FormData
+        },
+        body: submitData,
       });
 
       if (!res.ok) {
@@ -108,8 +119,9 @@ const TeacherForm = ({
       }
 
       if (onSuccess) onSuccess();
-      if (onClose) onClose(); // Close modal after success
+      if (onClose) onClose();
     } catch (error) {
+      console.error('Error submitting form:', error);
       setError(error instanceof Error ? error.message : "Failed to submit form");
     } finally {
       setIsLoading(false);
