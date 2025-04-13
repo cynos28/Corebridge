@@ -98,13 +98,21 @@ const TeacherListPage = () => {
 
   const handleUpdate = async (id: string, updatedData: any) => {
     try {
+      const token = localStorage.getItem('token');
       const response = await fetch(`http://localhost:5000/api/teachers/${id}`, {
         method: "PUT",
         headers: {
-          "Content-Type": "application/json",
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': "application/json",
         },
         body: JSON.stringify(updatedData),
       });
+
+      if (response.status === 401) {
+        localStorage.removeItem('token');
+        // You may want to redirect to login page here
+        return;
+      }
   
       if (!response.ok) {
         throw new Error("Failed to update teacher");

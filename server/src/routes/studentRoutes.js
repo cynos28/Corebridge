@@ -3,92 +3,90 @@ const router = express.Router();
 const auth = require('../middleware/auth');
 const Student = require('../models/Student');
 const bcrypt = require('bcryptjs');
-const User = require('../models/User');
 
-// Create Student
-router.post('/', auth, async (req, res) => {
+// Get all students
+router.get('/', auth, async (req, res) => {
   try {
-    const { email, password } = req.body;
-    
-    // Check if student exists
-    const existingStudent = await Student.findOne({ email });
-    if (existingStudent) {
-      return res.status(400).json({ message: 'Student already exists' });
-    }
-
-    // Create user account
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = new User({
-      email,
-      password: hashedPassword,
-      role: 'student',
-      name: `${req.body.firstName} ${req.body.lastName}`
-    });
-    await user.save();
-
-    // Create student with user reference
-    const student = new Student({
-      ...req.body,
-      password: hashedPassword,
-      userId: user._id
-    });
-    await student.save();
-
-    // Update user with student reference
-    user.studentId = student._id;
-    await user.save();
-
-    res.status(201).json(student);
+    const students = await Student.find().select('-password');
+    res.json(students);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
 
-// Update Student
-router.put('/:id', auth, async (req, res) => {
+// Get single student
+router.get('/:id', auth, async (req, res) => {
   try {
-    const updates = { ...req.body };
-    if (updates.password) {
-      updates.password = await bcrypt.hash(updates.password, 10);
-    }
-
-    const student = await Student.findByIdAndUpdate(
-      req.params.id,
-      updates,
-      { new: true }
-    );
-
+    const student = await Student.findById(req.params.id).select('-password');
     if (!student) {
       return res.status(404).json({ message: 'Student not found' });
     }
-
-    // Update associated user if password changed
-    if (updates.password) {
-      await User.findOneAndUpdate(
-        { studentId: student._id },
-        { password: updates.password }
-      );
-    }
-
     res.json(student);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
 
-// Delete Student
-router.delete('/:id', auth, async (req, res) => {
+// Create student
+router.post('/', auth, async (req, res) => {
   try {
-    const student = await Student.findById(req.params.id);
+    const hashedPassword = await bcrypt.hash(req.body.password, 10);
+    const student = new Student({
+      ...req.body,
+      password: hashedPassword
+    });
+    const newStudent = await student.save();
+    const studentResponse = newStudent.toObject();
+    delete studentResponse.password;
+    res.status(201).json(studentResponse);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// Update student
+router.put('/:id', auth, async (req, res) => {
+  try {
+    const updates = { ...req.body };
+    
+    // Validate required fields
+    const requiredFields = ['firstName', 'lastName', 'email', 'phone', 'address', 'grade', 'class', 'sex'];
+    for (const field of requiredFields) {
+      if (!updates[field]) {
+        return res.status(400).json({ message: `${field} is required` });
+      }
+    }
+
+    const student = await Student.findByIdAndUpdate(
+      req.params.id,
+      { $set: updates },
+      { new: true, runValidators: true }
+    ).select('-password');
+    
     if (!student) {
       return res.status(404).json({ message: 'Student not found' });
     }
 
-    // Delete associated user
-    await User.findOneAndDelete({ studentId: student._id });
-    await student.remove();
+    // Add cache control header
+    res.set('Cache-Control', 'no-store');
+    res.json(student);
+  } catch (error) {
+    console.error('Update error:', error);
+    res.status(400).json({ 
+      message: error.message,
+      error: error
+    });
+  }
+});
 
-    res.json({ message: 'Student deleted successfully' });
+// Delete student
+router.delete('/:id', auth, async (req, res) => {
+  try {
+    const student = await Student.findByIdAndDelete(req.params.id);
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+    res.json({ message: 'Student deleted' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

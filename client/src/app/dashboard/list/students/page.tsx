@@ -75,7 +75,9 @@ const StudentListPage = () => {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
           'Accept': 'application/json'
-        }
+        },
+        // Add cache control to prevent caching
+        cache: 'no-store'
       });
 
       let data;

@@ -73,11 +73,16 @@ exports.updateStudent = async (req, res) => {
   try {
     const updates = { ...req.body };
     delete updates.password; // Remove password from updates
+    delete updates._id; // Remove _id if present
     
     const student = await Student.findByIdAndUpdate(
       req.params.id,
-      updates,
-      { new: true, runValidators: true }
+      { $set: updates },
+      { 
+        new: true, 
+        runValidators: true,
+        context: 'query'
+      }
     ).select('-password');
 
     if (!student) {
@@ -88,7 +93,8 @@ exports.updateStudent = async (req, res) => {
   } catch (error) {
     console.error('Error updating student:', error);
     res.status(500).json({ 
-      message: error.message || 'Error updating student'
+      message: error.message || 'Error updating student',
+      error: error 
     });
   }
 };

@@ -9,7 +9,7 @@ import { useState } from "react";
 const schema = z.object({
   username: z.string().min(3).max(20),
   email: z.string().email(),
-  password: z.string().min(8),
+  password: z.string().min(8).optional(), // Make password optional for updates
   firstName: z.string().min(1),
   lastName: z.string().min(1),
   phone: z.string().min(1),
@@ -42,7 +42,17 @@ const StudentForm = ({
     reset,
   } = useForm<Inputs>({
     resolver: zodResolver(schema),
-    defaultValues: data,
+    defaultValues: {
+      username: data?.username || '',
+      email: data?.email || '',
+      firstName: data?.firstName || '',
+      lastName: data?.lastName || '',
+      phone: data?.phone || '',
+      address: data?.address || '',
+      grade: data?.grade || '',
+      class: data?.class || '',
+      sex: data?.sex || ''
+    }
   });
 
   const onSubmit = async (formData: Inputs) => {
@@ -53,25 +63,30 @@ const StudentForm = ({
       const token = localStorage.getItem('token');
       const url = `http://localhost:5000/api/students${type === "update" ? `/${data?._id}` : ""}`;
       
+      // Remove password field if it's empty or if updating
+      if (type === "update" || !formData.password) {
+        delete formData.password;
+      }
+
       const response = await fetch(url, {
         method: type === "create" ? "POST" : "PUT",
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          ...formData,
-          // Only include password for new students
-          password: type === "create" ? formData.password : undefined
-        }),
+        body: JSON.stringify(formData),
+        cache: 'no-store' // Prevent caching
       });
 
-      const responseData = await response.json();
       if (!response.ok) {
-        throw new Error(responseData.message || `Error: ${response.status}`);
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
 
-      if (onSuccess) onSuccess();
+      const responseData = await response.json();
+      
+      // Call onSuccess before closing modal
+      if (onSuccess) await onSuccess();
       if (onClose) onClose();
       
       // Reset form after successful submission
@@ -81,6 +96,7 @@ const StudentForm = ({
 
     } catch (error) {
       setError(error instanceof Error ? error.message : "Failed to submit form");
+      console.error('Form submission error:', error);
     } finally {
       setIsLoading(false);
     }

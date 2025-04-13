@@ -34,6 +34,7 @@ const ticketRoutes = require('./routes/ticketRoutes');
 const authRoutes = require('./routes/auth')
 const adminRoutes = require('./routes/adminRoutes');
 const { initAdmin } = require('./controllers/authController');
+const studentRoutes = require('./routes/studentRoutes');
 
 mongoose
   .connect(process.env.MONGODB_URI)
@@ -73,7 +74,7 @@ function startServer(retries = 3) {
 // Routes - Update the order to have auth routes first
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
-app.use('/api/students', require('./routes/studentRoutes'));
+app.use('/api/students', studentRoutes);
 app.use("/api/teachers", teacherRoutes);
 app.use("/api/assignments", assignmentRoutes);
 app.use("/api/exams", examRoutes);
