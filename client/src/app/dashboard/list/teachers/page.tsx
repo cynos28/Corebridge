@@ -43,7 +43,20 @@ const TeacherListPage = () => {
   // Fetch teachers from the backend API
   const fetchTeachers = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/teachers");
+      const token = localStorage.getItem('token');
+      const res = await fetch("http://localhost:5000/api/teachers", {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (res.status === 401) {
+        localStorage.removeItem('token');
+        // You may want to redirect to login page here
+        return;
+      }
+
       if (!res.ok) {
         throw new Error("Failed to fetch teachers");
       }
@@ -58,9 +71,20 @@ const TeacherListPage = () => {
 
   const handleDelete = async (id: string) => {
     try {
+      const token = localStorage.getItem('token');
       const response = await fetch(`http://localhost:5000/api/teachers/${id}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
+
+      if (response.status === 401) {
+        localStorage.removeItem('token');
+        // You may want to redirect to login page here
+        return;
+      }
 
       if (!response.ok) {
         throw new Error('Failed to delete teacher');
@@ -74,13 +98,21 @@ const TeacherListPage = () => {
 
   const handleUpdate = async (id: string, updatedData: any) => {
     try {
+      const token = localStorage.getItem('token');
       const response = await fetch(`http://localhost:5000/api/teachers/${id}`, {
         method: "PUT",
         headers: {
-          "Content-Type": "application/json",
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': "application/json",
         },
         body: JSON.stringify(updatedData),
       });
+
+      if (response.status === 401) {
+        localStorage.removeItem('token');
+        // You may want to redirect to login page here
+        return;
+      }
   
       if (!response.ok) {
         throw new Error("Failed to update teacher");
@@ -107,16 +139,19 @@ const TeacherListPage = () => {
           <div className="relative w-12 h-12">
             {teacher.photoUrl ? (
               <Image
-                src={`http://localhost:5000${teacher.photoUrl}`}
+                src={`http://localhost:5000${teacher.photoUrl}`} // This path should now work
                 alt={`${teacher.firstName} ${teacher.lastName}`}
                 fill
                 className="rounded-full object-cover"
                 sizes="(max-width: 48px) 100vw, 48px"
                 priority
+                onError={(e: any) => {
+                  e.target.src = '/images/default/teacher.png';
+                }}
               />
             ) : (
               <Image
-                src="/default-teacher.png"
+                src="/images/default/teacher.png"  // Updated path
                 alt="Default profile"
                 fill
                 className="rounded-full object-cover"

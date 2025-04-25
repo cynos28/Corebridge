@@ -24,6 +24,7 @@ const FormModal = ({
   data,
   id,
   role = "admin",
+  onSuccess,
 }: {
   table:
     | "teacher"
@@ -42,6 +43,7 @@ const FormModal = ({
   data?: any;
   id?: number;
   role?: string;
+  onSuccess?: () => void;
 }) => {
   const size = type === "create" ? "w-8 h-8" : "w-7 h-7";
   const bgColor =
@@ -52,19 +54,59 @@ const FormModal = ({
       : "bg-cbPurple";
 
   const [open, setOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleDelete = async () => {
+    try {
+      setIsSubmitting(true);
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/${table}s/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Failed to delete');
+      }
+
+      setOpen(false);
+      if (onSuccess) onSuccess();
+    } catch (error: any) {
+      setError(error.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const Form = () => {
     return type === "delete" && id ? (
-      <form action="" className="p-4 flex flex-col gap-4">
+      <form onSubmit={(e) => {
+        e.preventDefault();
+        handleDelete();
+      }} className="p-4 flex flex-col gap-4">
+        {error && (
+          <div className="bg-red-50 text-red-500 p-3 rounded-md text-sm">
+            {error}
+          </div>
+        )}
         <span className="text-center font-medium">
           All data will be lost. Are you sure you want to delete this {table}?
         </span>
-        <button className="bg-red-700 text-white py-2 px-4 rounded-md border-none w-max self-center">
-          Delete
+        <button 
+          type="submit"
+          disabled={isSubmitting}
+          className="bg-red-700 text-white py-2 px-4 rounded-md border-none w-max self-center disabled:bg-gray-400"
+        >
+          {isSubmitting ? 'Deleting...' : 'Delete'}
         </button>
       </form>
     ) : type === "create" || type === "update" ? (
-      forms[table](type, data)
+      forms[table](type, data, onSuccess)
     ) : (
       "Form not found!"
     );

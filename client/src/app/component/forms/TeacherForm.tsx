@@ -6,6 +6,7 @@ import { z } from "zod";
 import InputField from "../InputField";
 import Image from "next/image";
 import { useState, useRef } from "react";
+import { useRouter } from 'next/navigation';
 
 const schema = z.object({
   username: z.string().min(3).max(20),
@@ -26,17 +27,15 @@ type Inputs = z.infer<typeof schema>;
 
 const bloodTypes = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
-const TeacherForm = ({
-  type,
-  data,
-  onSuccess,
-  onClose,
-}: {
+interface TeacherFormProps {
   type: "create" | "update";
   data?: any;
   onSuccess?: () => void;
   onClose?: () => void;
-}) => {
+}
+
+const TeacherForm = ({ type, data, onSuccess, onClose }: TeacherFormProps) => {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [subjects, setSubjects] = useState<string[]>(data?.subjects || []);
@@ -80,36 +79,51 @@ const TeacherForm = ({
     try {
       setIsLoading(true);
       setError("");
-
+      const token = localStorage.getItem('token');
+      
       const submitData = new FormData();
+      // Add form fields to FormData
       Object.keys(formData).forEach(key => {
-        submitData.append(key, formData[key]);
+        if (formData[key] !== undefined && key !== 'subjects') {
+          submitData.append(key, formData[key]);
+        }
       });
 
-      // Append subjects
+      // Handle subjects array
       subjects.forEach(subject => {
         submitData.append('subjects[]', subject);
       });
 
-      // Append image if selected
+      // Handle image upload
       if (selectedImage) {
         submitData.append('photo', selectedImage);
       }
 
-      const url = "http://localhost:5000/api/teachers" + (type === "update" ? `/${data._id}` : "");
-      const res = await fetch(url, {
+      const url = "http://localhost:5000/api/teachers" + (type === "update" ? `/${data?._id}` : "");
+      const response = await fetch(url, {
         method: type === "create" ? "POST" : "PUT",
-        body: submitData, // Send as FormData
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: submitData,
       });
 
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || `Error: ${res.status}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Error: ${response.status}`);
       }
 
+      const result = await response.json();
+
       if (onSuccess) onSuccess();
-      if (onClose) onClose(); // Close modal after success
+      if (onClose) onClose();
+      
+      // Navigate to teacher profile after successful creation
+      if (type === "create") {
+        router.push(`/dashboard/list/teachers/${result._id}`);
+      }
     } catch (error) {
+      console.error('Error submitting form:', error);
       setError(error instanceof Error ? error.message : "Failed to submit form");
     } finally {
       setIsLoading(false);

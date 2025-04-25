@@ -1,8 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
+    domains: ['localhost'],
     remotePatterns: [
-      {
+{
         protocol: 'https',
         hostname: 'images.pexels.com',
         pathname: '/photos/**',
@@ -18,8 +19,8 @@ const nextConfig = {
   async rewrites() {
     return [
       {
-        source: "/:path*",       // what the user sees (public URL)
-        destination: "/dashboard/:path*", // actual Next.js route
+        source: "/:path*", 
+        destination: "/dashboard/:path*",
       },
     ];
   },

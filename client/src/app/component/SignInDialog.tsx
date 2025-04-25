@@ -17,17 +17,54 @@ export default function SignInDialog({ isOpen, onClose, onSignIn }: SignInDialog
     password: '',
     role: 'student'
   });
+  const [error, setError] = useState('');
 
   const roles: UserRole[] = ['student', 'teacher', 'admin'];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     
-    // Update both localStorage and global role state
-    localStorage.setItem("user-role", credentials.role);
-    setRole(credentials.role); // Use the setter function
-    
-    onSignIn(credentials);
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: credentials.username, // Using username field as email
+          password: credentials.password,
+          role: credentials.role
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Login failed');
+      }
+
+      // Store auth data
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user-role', data.user.role);
+      localStorage.setItem('user-id', data.user._id);
+      localStorage.setItem('user-email', data.user.email);
+      localStorage.setItem('user-name', 
+        data.user.firstName && data.user.lastName 
+          ? `${data.user.firstName} ${data.user.lastName}`
+          : data.user.username || ''
+      );
+
+      // Close modal and redirect
+      if (onClose) onClose();
+      
+      // Redirect based on role
+      window.location.href = `/dashboard/${data.user.role}`;
+
+    } catch (error: any) {
+      setError(error.message || 'Failed to sign in');
+      console.error('Login error:', error);
+    }
   };
 
   return (
@@ -49,6 +86,11 @@ export default function SignInDialog({ isOpen, onClose, onSignIn }: SignInDialog
           >
             <h2 className="text-2xl font-bold text-[#ba9df1] mb-6">Sign In to Corebridge</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {error && (
+                <div className="bg-red-100 text-red-600 p-3 rounded-lg text-sm">
+                  {error}
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Username/ID</label>
                 <input
