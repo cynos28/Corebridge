@@ -1,14 +1,16 @@
-import { FieldError } from "react-hook-form";
+"use client";
 
-type InputFieldProps = {
+import { UseFormRegister } from "react-hook-form";
+
+interface InputFieldProps {
   label: string;
   type?: string;
-  register: any;
+  register: UseFormRegister<any>;
   name: string;
-  defaultValue?: string;
-  error?: FieldError;
-  inputProps?: React.InputHTMLAttributes<HTMLInputElement>;
-};
+  defaultValue?: string | number;
+  error?: string;
+  [key: string]: any; // For any additional input props
+}
 
 const InputField = ({
   label,
@@ -17,21 +19,19 @@ const InputField = ({
   name,
   defaultValue,
   error,
-  inputProps,
+  ...inputProps
 }: InputFieldProps) => {
   return (
-    <div className="flex flex-col gap-2 w-full md:w-1/4">
-      <label className="text-xs text-gray-500">{label}</label>
+    <div className="flex flex-col gap-2">
+      <label className="text-sm text-gray-600">{label}</label>
       <input
         type={type}
         {...register(name)}
-        className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
-        {...inputProps}
         defaultValue={defaultValue}
+        className="ring-1 ring-purple-200 rounded-md p-2 focus:ring-2 focus:ring-purple-500"
+        {...inputProps}
       />
-      {error?.message && (
-        <p className="text-xs text-red-400">{error.message.toString()}</p>
-      )}
+      {error && <span className="text-xs text-red-500">{error}</span>}
     </div>
   );
 };
