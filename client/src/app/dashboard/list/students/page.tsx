@@ -9,6 +9,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import StudentReport from "@/app/component/StudentReport";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
+import { HiDocumentArrowDown } from "react-icons/hi2";
+import { HiMiniXCircle } from "react-icons/hi2";  
+import StudentForm from "@/app/component/forms/StudentForm";
 
 type Student = {
   _id: string;
@@ -53,11 +59,17 @@ const columns = [
   },
 ];
 
+
+
 const StudentListPage = () => {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showStudentReport, setShowStudentReport] = useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editItem, setEditItem] = useState<Student | null>(null);
 
   
   useEffect(() => {
@@ -118,12 +130,37 @@ const StudentListPage = () => {
       setLoading(false);
     }
   };
+  const handleFormSubmit = async (submittedStudent: Student) => {
+    console.log("Form submitted:", submittedStudent);
+    setIsFormOpen(false);
+    setIsEditMode(false);
+    setEditItem(null);
+    await fetchStudents();
+  };
+  
   const filteredStudent = students.filter((item) =>
     item.firstName.toLowerCase().includes(searchTerm.toLowerCase())
     || item.lastName.toLowerCase().includes(searchTerm.toLowerCase())
     || item.studentId.toLowerCase().includes(searchTerm.toLowerCase())
     || item.phone?.toString().includes(searchTerm.toLowerCase())
   );
+
+    // PDF generation for the custom report view
+  const downloadStudentReportPDF = async () => {
+    const input = document.getElementById("StudentReport");
+    if (!input) return;
+    try {
+      const canvas = await html2canvas(input);
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF();
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      pdf.save("Student Sheet.pdf");
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+    }
+  };
 
   const renderRow = (item: Student) => (
     <tr
@@ -188,6 +225,13 @@ const StudentListPage = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
               <div className="flex items-center gap-4 self-end">
+                <button
+                              onClick={() => setShowStudentReport(!showStudentReport)}
+                              className="w-8 h-8 flex items-center justify-center rounded-full bg-cbYellow text-xs"
+                
+                            >
+                              {showStudentReport ? <HiMiniXCircle size={18}/> : <HiDocumentArrowDown size={18} />}
+                            </button>
                 <button className="w-8 h-8 flex items-center justify-center rounded-full bg-cbYellow">
                   <Image src="/filter.png" alt="" width={14} height={14} />
                 </button>
@@ -200,9 +244,35 @@ const StudentListPage = () => {
               </div>
             </div>
           </div>
+          {showStudentReport ? (
+        <div>
+          <StudentReport data={filteredStudent} />
+          <div className="flex justify-center gap-4 mt-4">
+            <button
+              onClick={downloadStudentReportPDF}
+              className="px-4 py-2 bg-[#E9A5F1] text-white rounded-md transition duration-300 ease-in-out transform hover:scale-105 hover:bg-[#C68EFD]"
+            >
+              Download PDF
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div id="resultSheet" className="bg-white p-4 rounded-md flex-1 m-4 mt-0">
           <Table columns={columns} renderRow={renderRow} data={filteredStudent} />
+        </div>
+      )}
           <Pagination />
+
+          {isFormOpen && (
+        <StudentForm
+          onClose={() => setIsFormOpen(false)}
+          onSubmit={handleFormSubmit}
+          editData={isEditMode ? editItem : null}
+        />
+      )}
+
         </>
+        
       )}
     </div>
   );
