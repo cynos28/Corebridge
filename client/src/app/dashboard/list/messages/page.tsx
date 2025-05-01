@@ -8,9 +8,7 @@ type Message = {
   id: number;
   sender: string;
   recipient: string;
-  subject: string;
-  content: string;
-  date: string;
+  messege: string;
 };
 
 const columns = [
@@ -24,15 +22,11 @@ const columns = [
     className: "hidden md:table-cell",
   },
   {
-    header: "Subject",
-    accessor: "subject",
-    className: "hidden lg:table-cell",
+    header: "Message",
+    accessor: "messege",
+    className: "hidden md:table-cell",
   },
-  {
-    header: "Date",
-    accessor: "date",
-    className: "hidden lg:table-cell",
-  },
+
 ];
 
 const MessageListPage = () => {
@@ -43,8 +37,9 @@ const MessageListPage = () => {
     >
       <td className="p-4 font-medium">{message.sender}</td>
       <td className="hidden md:table-cell">{message.recipient}</td>
-      <td className="hidden lg:table-cell">{message.subject}</td>
-      <td className="hidden lg:table-cell">{message.date}</td>
+      <td className="hidden md:table-cell">{message.messege}</td>
+      
+      
     </tr>
   );
 

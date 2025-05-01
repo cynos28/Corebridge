@@ -1,6 +1,5 @@
 // TEMPORARY DATA
 
-export let role = "teacher";
 let currentRole = 'teacher';
 
 // Only access localStorage on the client side
@@ -1075,22 +1074,17 @@ export const calendarEvents = [
     end: new Date(2024, 7, 16, 14, 45),
   },
 ];
-
 export const messagesData = [
   {
     id: 1,
     sender: "Principal",
     recipient: "All Parents",
-    subject: "School Closure",
-    content: "School will be closed tomorrow due to weather.",
-    date: "2025-05-01",
+    messege: "School Closure Notice",
   },
   {
     id: 2,
     sender: "Admin",
     recipient: "Grade 10",
-    subject: "Exam Schedule",
-    content: "The exam timetable has been released.",
-    date: "2025-05-02",
+    messege: "Parent-Teacher Meeting",
   },
 ];

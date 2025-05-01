@@ -209,8 +209,9 @@ const ResultListPage = () => {
           <button
               onClick={() => setShowCustomReport(!showCustomReport)}
               className="w-8 h-8 flex items-center justify-center rounded-full bg-cbYellow text-xs"
+
             >
-              {showCustomReport ? <HiMiniXCircle size={18}/> : <HiMiniDocumentText  size={18}/>}
+              {showCustomReport ? <HiMiniXCircle size={18}/> : <HiDocumentArrowDown size={18} />}
             </button>
             <button className="w-8 h-8 flex items-center justify-center rounded-full bg-cbYellow">
               <Image src="/filter.png" alt="Filter" width={14} height={14} />
