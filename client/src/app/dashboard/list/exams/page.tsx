@@ -102,6 +102,33 @@ const ExamListPage = () => {
     }
   };
 
+  const handleDownloadExam = async (exam: Exam) => {
+    try {
+      // Create exam details content
+      const content = `
+        Exam Details
+        ============
+        Subject: ${exam.subject}
+        Class: ${exam.class}
+        Teacher: ${exam.teacher}
+        Date: ${new Date(exam.date).toLocaleDateString()}
+      `;
+
+      // Create blob and download
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `exam-${exam.subject}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading exam:', error);
+    }
+  };
+
   const openCreateForm = () => {
     setIsEditMode(false);
     setEditItem(null);
@@ -156,12 +183,24 @@ const ExamListPage = () => {
       <td className="hidden md:table-cell">{new Date(item.date).toLocaleDateString()}</td>
       <td>
         <div className="flex items-center gap-2">
-          <button className="w-9 h-9 flex items-center justify-center rounded-full bg-blue-400" onClick={() => openEditForm(item)}>
-          <HiOutlinePencilSquare size={18}/>
-          </button>
-          <button className="w-9 h-9 flex items-center justify-center rounded-full bg-red-400" onClick={() => handleDeleteExam(item._id)}>
-          <HiMiniArchiveBoxXMark size={18}/>
-          </button>
+          {role === "student" && (
+            <button 
+              className="px-2 py-1 text-sm bg-green-500 text-white rounded hover:bg-green-600"
+              onClick={() => handleDownloadExam(item)}
+            >
+              Download
+            </button>
+          )}
+          {(role === "admin" || role === "teacher") && (
+            <>
+              <button className="px-2 py-1 text-sm bg-blue-500 text-white rounded" onClick={() => openEditForm(item)}>
+                Edit
+              </button>
+              <button className="px-2 py-1 text-sm bg-red-500 text-white rounded" onClick={() => handleDeleteExam(item._id)}>
+                Delete
+              </button>
+            </>
+          )}
         </div>
       </td>
     </tr>
