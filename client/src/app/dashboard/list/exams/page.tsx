@@ -193,11 +193,11 @@ const ExamListPage = () => {
           )}
           {(role === "admin" || role === "teacher") && (
             <>
-              <button className="px-2 py-1 text-sm bg-blue-500 text-white rounded" onClick={() => openEditForm(item)}>
-                Edit
+              <button className="w-9 h-9 flex items-center justify-center rounded-full bg-blue-400" onClick={() => openEditForm(item)}>
+              <HiOutlinePencilSquare size={18}/>
               </button>
-              <button className="px-2 py-1 text-sm bg-red-500 text-white rounded" onClick={() => handleDeleteExam(item._id)}>
-                Delete
+              <button className="w-9 h-9 flex items-center justify-center rounded-full bg-red-400" onClick={() => handleDeleteExam(item._id)}>
+              <HiMiniArchiveBoxXMark size={18}/>
               </button>
             </>
           )}
