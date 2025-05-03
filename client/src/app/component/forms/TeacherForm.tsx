@@ -11,7 +11,7 @@ import { useRouter } from 'next/navigation';
 const schema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
   email: z.string().email("Invalid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  password: z.string().min(8, "Password must be at least 8 characters").optional(),
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
   phone: z.string().min(1, "Phone number is required"),
@@ -86,29 +86,23 @@ const TeacherForm = ({ type, data, onSuccess, onClose }: TeacherFormProps) => {
       }
 
       const submitFormData = new FormData();
-
-      // Add all form fields except subjects
-      Object.entries(formData).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && key !== 'subjects' && value !== '') {
+      
+      // Add form fields
+      for (const [key, value] of Object.entries(formData)) {
+        // Skip empty values, password in update mode, and subjects (handled separately)
+        if (value && key !== 'subjects' && !(type === 'update' && key === 'password')) {
           submitFormData.append(key, value.toString());
         }
-      });
+      }
 
       // Handle subjects array
-      if (subjects.length > 0) {
-        subjects.forEach(subject => {
-          submitFormData.append('subjects[]', subject);
-        });
-      }
+      subjects.forEach(subject => {
+        submitFormData.append('subjects[]', subject);
+      });
 
       // Handle image upload
       if (selectedImage) {
         submitFormData.append('photo', selectedImage);
-      }
-
-      // Don't send password if updating
-      if (type === 'update') {
-        submitFormData.delete('password');
       }
 
       const url = "http://localhost:5000/api/teachers" + (type === "update" && data?._id ? `/${data._id}` : "");
@@ -121,16 +115,17 @@ const TeacherForm = ({ type, data, onSuccess, onClose }: TeacherFormProps) => {
         body: submitFormData
       });
 
+      if (response.status === 401) {
+        throw new Error('Unauthorized. Please log in again.');
+      }
+
       const responseData = await response.json();
 
       if (!response.ok) {
-        if (responseData.errors) {
-          throw new Error(responseData.errors.join('\n'));
-        }
-        throw new Error(responseData.message || responseData.error || 'An error occurred');
+        throw new Error(responseData.message || 'Failed to submit form');
       }
 
-      if (onSuccess) onSuccess();
+      if (onSuccess) await onSuccess();
       if (onClose) onClose();
 
     } catch (error) {
