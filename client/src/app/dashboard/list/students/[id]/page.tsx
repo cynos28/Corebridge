@@ -4,6 +4,7 @@ import Link from "next/link";
 import Announcement from "@/app/component/Announcement";
 import BigCalendar from "@/app/component/BigCalendar";
 
+
 const SingleStudentPage = () => {
   return (
     <div className="flex-1 p-4 flex flex-col gap-4 xl:flex-row">

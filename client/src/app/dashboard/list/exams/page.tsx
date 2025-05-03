@@ -4,9 +4,14 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { FaPlus } from "react-icons/fa";
 import ExamForm from "@/app/component/forms/ExamForm";
-import TableSearch from "@/app/component/TableSearch";
+import ResultTableSearch from "@/app/component/ResultTableSearch";
 import Table from "@/app/component/Table";
 import Pagination from "@/app/component/Pagination";
+import { jsPDF } from "jspdf";
+import html2canvas from "html2canvas";
+import { HiDocumentArrowDown } from "react-icons/hi2";
+import { HiOutlinePencilSquare } from "react-icons/hi2";
+import { HiMiniArchiveBoxXMark } from "react-icons/hi2";
 
 import { examsData, role } from "@/lib/data"; // If you have static sample data; otherwise, fetch from your server
 
@@ -31,6 +36,7 @@ const ExamListPage = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editItem, setEditItem] = useState<Exam | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     fetchExams();
@@ -76,6 +82,14 @@ const ExamListPage = () => {
   };
 
   const handleDeleteExam = async (id: string) => {
+
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this result?"
+    );
+    if (!confirmDelete) {
+      return;
+    }
+
     try {
       const res = await fetch(`http://localhost:5000/api/exams/${id}`, {
         method: "DELETE",
@@ -136,6 +150,31 @@ const ExamListPage = () => {
     setIsFormOpen(false);
   };
 
+  const filteredexam = exams.filter((item) =>
+    item.subject.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const downloadPDF = async () => {
+    const input = document.getElementById("examSheet");
+    if (!input) return;
+
+    try {
+      const canvas = await html2canvas(input);
+      const imgData = canvas.toDataURL("image/png");
+
+      const pdf = new jsPDF();
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      pdf.save("exam-report.pdf");
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+    }
+  };
+
+  
+
   const renderRow = (item: Exam) => (
     <tr key={item._id} className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-cbPurpleLight">
       <td className="p-4">{item.subject}</td>
@@ -154,11 +193,11 @@ const ExamListPage = () => {
           )}
           {(role === "admin" || role === "teacher") && (
             <>
-              <button className="px-2 py-1 text-sm bg-blue-500 text-white rounded" onClick={() => openEditForm(item)}>
-                Edit
+              <button className="w-9 h-9 flex items-center justify-center rounded-full bg-blue-400" onClick={() => openEditForm(item)}>
+              <HiOutlinePencilSquare size={18}/>
               </button>
-              <button className="px-2 py-1 text-sm bg-red-500 text-white rounded" onClick={() => handleDeleteExam(item._id)}>
-                Delete
+              <button className="w-9 h-9 flex items-center justify-center rounded-full bg-red-400" onClick={() => handleDeleteExam(item._id)}>
+              <HiMiniArchiveBoxXMark size={18}/>
               </button>
             </>
           )}
@@ -172,8 +211,18 @@ const ExamListPage = () => {
       <div className="flex items-center justify-between">
         <h1 className="hidden md:block text-lg font-semibold">All Exams</h1>
         <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-          <TableSearch />
+        <ResultTableSearch
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          
           <div className="flex items-center gap-4 self-end">
+          <button
+              onClick={downloadPDF}
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-cbYellow"
+            >
+              <HiDocumentArrowDown size={18} />
+            </button>
             <button className="w-8 h-8 flex items-center justify-center rounded-full bg-cbYellow">
               <Image src="/filter.png" alt="Filter" width={14} height={14} />
             </button>
@@ -189,7 +238,10 @@ const ExamListPage = () => {
         </div>
       </div>
 
-      <Table columns={columns} renderRow={renderRow} data={exams} />
+      {/* Assignment Sheet Container */}
+      <div id="examSheet" className="bg-white p-4 rounded-md flex-1 m-4 mt-0">
+        <Table columns={columns} renderRow={renderRow} data={filteredexam} />  
+      </div>
       <Pagination />
 
       {isFormOpen && (
