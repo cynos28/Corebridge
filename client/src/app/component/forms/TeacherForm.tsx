@@ -9,18 +9,19 @@ import { useState, useRef } from "react";
 import { useRouter } from 'next/navigation';
 
 const schema = z.object({
-  username: z.string().min(3).max(20),
-  email: z.string().email(),
-  password: z.string().min(8),
-  firstName: z.string().min(1),
-  lastName: z.string().min(1),
-  phone: z.string().min(1),
-  address: z.string().min(1),
-  bloodType: z.string().min(1),
-  birthday: z.string().min(1), // or z.coerce.date() if you want direct date
-  sex: z.enum(["male", "female"]),
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  phone: z.string().min(1, "Phone number is required"),
+  address: z.string().min(1, "Address is required"),
+  bloodType: z.string().min(1, "Blood type is required"),
+  birthday: z.string().min(1, "Birthday is required"),
+  sex: z.enum(["male", "female"], {
+    required_error: "Sex is required",
+  }),
   subjects: z.array(z.string()).optional(),
-  photoUrl: z.string().optional(),
 });
 
 type Inputs = z.infer<typeof schema>;
@@ -80,48 +81,58 @@ const TeacherForm = ({ type, data, onSuccess, onClose }: TeacherFormProps) => {
       setIsLoading(true);
       setError("");
       const token = localStorage.getItem('token');
-      
-      const submitData = new FormData();
-      // Add form fields to FormData
-      Object.keys(formData).forEach(key => {
-        if (formData[key] !== undefined && key !== 'subjects') {
-          submitData.append(key, formData[key]);
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const submitFormData = new FormData();
+
+      // Add all form fields except subjects
+      Object.entries(formData).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && key !== 'subjects' && value !== '') {
+          submitFormData.append(key, value.toString());
         }
       });
 
       // Handle subjects array
-      subjects.forEach(subject => {
-        submitData.append('subjects[]', subject);
-      });
+      if (subjects.length > 0) {
+        subjects.forEach(subject => {
+          submitFormData.append('subjects[]', subject);
+        });
+      }
 
       // Handle image upload
       if (selectedImage) {
-        submitData.append('photo', selectedImage);
+        submitFormData.append('photo', selectedImage);
       }
 
-      const url = "http://localhost:5000/api/teachers" + (type === "update" ? `/${data?._id}` : "");
+      // Don't send password if updating
+      if (type === 'update') {
+        submitFormData.delete('password');
+      }
+
+      const url = "http://localhost:5000/api/teachers" + (type === "update" && data?._id ? `/${data._id}` : "");
+      
       const response = await fetch(url, {
         method: type === "create" ? "POST" : "PUT",
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${token}`
         },
-        body: submitData,
+        body: submitFormData
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `Error: ${response.status}`);
-      }
+      const responseData = await response.json();
 
-      const result = await response.json();
+      if (!response.ok) {
+        if (responseData.errors) {
+          throw new Error(responseData.errors.join('\n'));
+        }
+        throw new Error(responseData.message || responseData.error || 'An error occurred');
+      }
 
       if (onSuccess) onSuccess();
       if (onClose) onClose();
-      
-      // Navigate to teacher profile after successful creation
-      if (type === "create") {
-        router.push(`/dashboard/list/teachers/${result._id}`);
-      }
+
     } catch (error) {
       console.error('Error submitting form:', error);
       setError(error instanceof Error ? error.message : "Failed to submit form");

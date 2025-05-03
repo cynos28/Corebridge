@@ -30,6 +30,7 @@ const assignmentRoutes = require("./routes/assignmentRoutes");
 const examRoutes = require("./routes/examRoutes");
 const resultRoutes = require("./routes/resultsRoutes");
 const teacherRoutes = require("./routes/teacherRoutes");
+
 const ticketRoutes = require('./routes/ticketRoutes');
 const authRoutes = require('./routes/auth')
 const adminRoutes = require('./routes/adminRoutes');
