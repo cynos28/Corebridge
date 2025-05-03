@@ -99,13 +99,27 @@ const TeacherListPage = () => {
   const handleUpdate = async (id: string, updatedData: any) => {
     try {
       const token = localStorage.getItem('token');
+      const formData = new FormData();
+      
+      // Add all fields from updatedData to formData
+      Object.entries(updatedData).forEach(([key, value]) => {
+        if (key === 'subjects' && Array.isArray(value)) {
+          // Handle subjects array specially
+          value.forEach((subject: string) => {
+            formData.append('subjects[]', subject);
+          });
+        } else if (value !== null && value !== undefined) {
+          formData.append(key, value as string);
+        }
+      });
+
       const response = await fetch(`http://localhost:5000/api/teachers/${id}`, {
         method: "PUT",
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': "application/json",
+          // Remove Content-Type header to let browser set it with boundary for FormData
         },
-        body: JSON.stringify(updatedData),
+        body: formData,
       });
 
       if (response.status === 401) {
