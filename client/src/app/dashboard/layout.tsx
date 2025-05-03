@@ -1,10 +1,8 @@
-'use client';
-
 import Link from "next/link";
 import Menu from "../component/Menu";
 import Navbar from "../component/Navbar";
 import Image from "next/image";
-import { AnnouncementProvider } from "@/context/AnnouncementContext";
+import { AnnouncementProvider } from "../../context/AnnouncementContext";
 
 export default function DashboardLayout({
   children,

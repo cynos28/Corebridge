@@ -77,8 +77,8 @@ const menuItems = [
         },
         {
           icon: "/calendar.png",
-          label: "Events",
-          href: "/list/events",
+          label: "Meetings",
+          href: "/list/meetings",
           visible: ["admin", "teacher", "student", "parent"],
         },
         {
