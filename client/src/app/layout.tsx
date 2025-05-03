@@ -1,5 +1,6 @@
 import './globals.css';
 import type { Metadata } from 'next';
+import { AnnouncementProvider } from "@/context/AnnouncementContext";
 
 export const metadata: Metadata = {
   title: 'Corebridge',
@@ -16,7 +17,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <AnnouncementProvider>
+          {children}
+        </AnnouncementProvider>
+      </body>
     </html>
   );
 }

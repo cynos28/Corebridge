@@ -1,46 +1,66 @@
+'use client';
+
 import React from "react";
+import { X, Video } from "lucide-react";
+import { useAnnouncementContext } from "@/context/AnnouncementContext";
+import Link from "next/link";
 
 const Announcement = () => {
+  const { notifications, removeNotification } = useAnnouncementContext();
+
   return (
-    <div className="bg-white p-4 rounded-md ">
+    <div className="bg-white p-4 rounded-md">
       <div className="flex items-center justify-between border-b pb-2">
-        <h1 className="text-xl font-semibold text-gray-800">Corebridge Announcements</h1>
-        <span className="text-xs text-blue-500 cursor-pointer">View All</span>
+        <h1 className="text-xl font-semibold text-gray-800">Announcements & Meetings</h1>
+        <Link href="/dashboard/list/announcements" className="text-xs text-blue-500 cursor-pointer">
+          View All
+        </Link>
       </div>
       <div className="flex flex-col gap-4 mt-4">
-        <div className="bg-blue-100 rounded-md p-4">
-          <div className="flex items-center justify-between">
-            <h2 className="font-medium text-blue-700">New Semester Begins</h2>
-            <span className="text-xs text-gray-500 bg-white rounded-md px-2 py-1">
-              2025-01-15
-            </span>
-          </div>
-          <p className="text-sm text-gray-600 mt-1">
-            Welcome to the new academic session at Corebridge! Classes will commence from January 20, 2025.
-          </p>
-        </div>
-        <div className="bg-purple-100 rounded-md p-4">
-          <div className="flex items-center justify-between">
-            <h2 className="font-medium text-purple-700">Exam Schedule Released</h2>
-            <span className="text-xs text-gray-500 bg-white rounded-md px-2 py-1">
-              2025-01-10
-            </span>
-          </div>
-          <p className="text-sm text-gray-600 mt-1">
-            The exam timetable for the upcoming semester has been published. Please check your student portal for details.
-          </p>
-        </div>
-        <div className="bg-yellow-100 rounded-md p-4">
-          <div className="flex items-center justify-between">
-            <h2 className="font-medium text-yellow-700">Parent-Teacher Meeting</h2>
-            <span className="text-xs text-gray-500 bg-white rounded-md px-2 py-1">
-              2025-01-05
-            </span>
-          </div>
-          <p className="text-sm text-gray-600 mt-1">
-            A parent-teacher meeting is scheduled for January 25, 2025. Kindly confirm your availability through the portal.
-          </p>
-        </div>
+        {notifications.length === 0 ? (
+          <p className="text-gray-500 text-center py-4">No announcements or meetings yet</p>
+        ) : (
+          notifications.map((notification) => (
+            <div 
+              key={notification.id} 
+              className={`${notification.bgColor} rounded-md p-4 relative`}
+            >
+              <button
+                onClick={() => removeNotification(notification.id)}
+                className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+                aria-label="Close announcement"
+              >
+                <X size={16} />
+              </button>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {notification.type === 'meeting' && (
+                    <Video className="h-4 w-4 text-[#4A90E2]" />
+                  )}
+                  <h2 className={`font-medium ${notification.textColor}`}>
+                    {notification.title}
+                  </h2>
+                </div>
+                <span className="text-xs text-gray-500 bg-white rounded-md px-2 py-1">
+                  {notification.date}
+                </span>
+              </div>
+              <p className="text-sm text-gray-600 mt-1">
+                {notification.message}
+              </p>
+              {notification.type === 'meeting' && notification.meetingLink && (
+                <a
+                  href={notification.meetingLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 inline-block px-3 py-1 bg-[#4A90E2] text-white rounded-md text-xs hover:bg-[#357ABD] transition-colors"
+                >
+                  Join Meeting
+                </a>
+              )}
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
