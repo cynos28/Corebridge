@@ -114,7 +114,7 @@ const MeetingListPage = () => {
         <h1 className="text-2xl font-semibold text-gray-800">All Meetings</h1>
         <div className="flex items-center gap-4">
           <TableSearch />
-          {userRole === 'admin' && <FormModal table="meeting" type="create" />}
+          {userRole === 'admin' && <FormModal table="meeting" type="create" onSuccess={fetchMeetings} />}
         </div>
       </div>
 
@@ -142,7 +142,7 @@ const MeetingListPage = () => {
                     </CardTitle>
                     {(userRole === 'admin' || userRole === 'teacher') && (
                       <div className="flex gap-2">
-                        <FormModal table="meeting" type="update" data={meeting} />
+                        <FormModal table="meeting" type="update" data={meeting} onSuccess={fetchMeetings} />
                         <Button
                           variant="ghost"
                           size="icon"
