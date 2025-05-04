@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react"
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion"
 import SignInDialog from "./component/SignInDialog"
 import { SignInCredentials } from "./types/auth"
+import { useRouter } from "next/router"
 
 // Animation variants for different elements
 const containerVariants = {
@@ -36,6 +37,19 @@ const fadeInUpVariants = {
   },
 }
 
+const getRedirectPath = (role: string) => {
+  switch (role) {
+    case "student":
+      return "/dashboard/student";
+    case "teacher":
+      return "/dashboard/teacher";
+    case "admin":
+      return "/dashboard/admin";
+    default:
+      return "/";
+  }
+};
+
 export default function Page() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [activeFeature, setActiveFeature] = useState(0)
@@ -43,6 +57,17 @@ export default function Page() {
   const [isSignInOpen, setIsSignInOpen] = useState(false)
   const { scrollYProgress } = useScroll()
   const heroRef = useRef(null)
+  const router = useRouter()
+
+  const handleLoginSuccess = (data: any) => {
+    localStorage.setItem('auth-token', data.token);
+    localStorage.setItem('user-id', data.user._id);
+    localStorage.setItem('user-role', data.user.role);
+    localStorage.setItem('class-id', data.user.class || 'All Classes');
+    
+    const redirectPath = getRedirectPath(data.user.role);
+    router.push(redirectPath);
+  };
 
   // Parallax effect for hero section
   const y = useTransform(scrollYProgress, [0, 0.5], [0, -150])

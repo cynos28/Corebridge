@@ -1,12 +1,12 @@
 'use client';
 
-import { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 
 interface Notification {
   id: string;
   title: string;
-  message: string;
   date: string;
+  message: string;
   type: string;
   bgColor: string;
   textColor: string;
@@ -16,44 +16,29 @@ interface Notification {
 
 interface AnnouncementContextType {
   notifications: Notification[];
-  addNotification: (notification: Omit<Notification, 'id'>) => void;
-  removeNotification: (id: string) => void;
+  addNotification: (notification: Notification) => void;
 }
 
 const AnnouncementContext = createContext<AnnouncementContextType | undefined>(undefined);
 
-export function AnnouncementProvider({ children }: { children: ReactNode }) {
+export const AnnouncementProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
-  const addNotification = (notification: Omit<Notification, 'id'>) => {
-    const newNotification = {
-      ...notification,
-      id: `notification_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-    };
-    setNotifications(prev => [newNotification, ...prev]);
-  };
-
-  const removeNotification = (id: string) => {
-    setNotifications(prev => prev.filter(notification => notification.id !== id));
+  const addNotification = (notification: Notification) => {
+    setNotifications((prev) => [...prev, notification]);
   };
 
   return (
-    <AnnouncementContext.Provider 
-      value={{ 
-        notifications, 
-        addNotification, 
-        removeNotification 
-      }}
-    >
+    <AnnouncementContext.Provider value={{ notifications, addNotification }}>
       {children}
     </AnnouncementContext.Provider>
   );
-}
+};
 
-export function useAnnouncementContext() {
+export const useAnnouncementContext = () => {
   const context = useContext(AnnouncementContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useAnnouncementContext must be used within an AnnouncementProvider');
   }
   return context;
-}
+};

@@ -1,7 +1,9 @@
-import { useState, useEffect } from "react";
-import { CalendarIcon, Clock } from "lucide-react";
-import { format } from "date-fns";
-import { Button } from "@/components/ui/button";
+'use client';
+
+import { useState, useEffect } from 'react';
+import { CalendarIcon, Clock } from 'lucide-react';
+import { format } from 'date-fns';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -9,18 +11,18 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+} from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 declare global {
   interface Window {
@@ -32,6 +34,17 @@ declare global {
 interface ScheduleProps {
   open: boolean;
   onClose: () => void;
+  isSignedIn: boolean;
+  onSignIn: () => Promise<boolean>;
+  createCalendarEvent: (data: {
+    eventName: string;
+    eventDescription: string;
+    meetingDate: string;
+    startTime: string;
+    endTime: string;
+  }) => Promise<string | null>;
+  formatDate: (input: string) => string;
+  formatTime: (input: string) => string;
 }
 
 interface GoogleEvent {
@@ -55,57 +68,51 @@ interface GoogleEvent {
   };
 }
 
-export default function Schedule({ open, onClose }: ScheduleProps) {
+export default function Schedule({ open, onClose, isSignedIn, onSignIn, createCalendarEvent, formatDate, formatTime }: ScheduleProps) {
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [endDate, setEndDate] = useState<Date>(new Date(new Date().getTime() + 30 * 60000));
-  const [eventName, setEventName] = useState("");
-  const [eventDescription, setEventDescription] = useState("");
+  const [eventName, setEventName] = useState('');
+  const [eventDescription, setEventDescription] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isGapiLoaded, setIsGapiLoaded] = useState(false);
   const [isGsiLoaded, setIsGsiLoaded] = useState(false);
-  const [isSignedIn, setIsSignedIn] = useState(false);
   const [meetLink, setMeetLink] = useState<string | null>(null);
 
-  // Move these to environment variables in production
-  // Note: You should secure these in production environments
-  const CLIENT_ID = "528464651880-3o57pe8bqa0q3b932tlq47td0fo0hpcu.apps.googleusercontent.com";
-  const API_KEY = "AIzaSyD72BvEfn7N5ikxzhxqBkwOj3EVB9-kwng";
-  const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest"];
-  const SCOPES = "https://www.googleapis.com/auth/calendar.events";
+  const CLIENT_ID = '528464651880-3o57pe8bqa0q3b932tlq47td0fo0hpcu.apps.googleusercontent.com';
+  const API_KEY = 'AIzaSyD72BvEfn7N5ikxzhxqBkwOj3EVB9-kwng';
+  const DISCOVERY_DOCS = ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'];
+  const SCOPES = 'https://www.googleapis.com/auth/calendar.events';
 
-  // Load the Google API Client Libraries
   useEffect(() => {
-    // Load the Google API Client
     const loadGapiScript = () => {
-      const script = document.createElement("script");
-      script.src = "https://apis.google.com/js/api.js";
+      const script = document.createElement('script');
+      script.src = 'https://apis.google.com/js/api.js';
       script.async = true;
       script.defer = true;
       script.onload = () => {
-        console.log("GAPI script loaded");
+        console.log('GAPI script loaded');
         initializeGapiClient();
       };
       script.onerror = () => {
-        console.error("Error loading GAPI script");
-        setError("Failed to load Google API. Please try again later.");
+        console.error('Error loading GAPI script');
+        setError('Failed to load Google API. Please try again later.');
       };
       document.body.appendChild(script);
     };
 
-    // Load the Google Identity Services
     const loadGsiScript = () => {
-      const script = document.createElement("script");
-      script.src = "https://accounts.google.com/gsi/client";
+      const script = document.createElement('script');
+      script.src = 'https://accounts.google.com/gsi/client';
       script.async = true;
       script.defer = true;
       script.onload = () => {
-        console.log("GSI script loaded");
+        console.log('GSI script loaded');
         setIsGsiLoaded(true);
       };
       script.onerror = () => {
-        console.error("Error loading GSI script");
-        setError("Failed to load Google Identity Services. Please try again later.");
+        console.error('Error loading GSI script');
+        setError('Failed to load Google Identity Services. Please try again later.');
       };
       document.body.appendChild(script);
     };
@@ -125,10 +132,10 @@ export default function Schedule({ open, onClose }: ScheduleProps) {
 
   const initializeGapiClient = async () => {
     if (!window.gapi) return;
-    
+
     try {
       await new Promise<void>((resolve) => {
-        window.gapi.load("client", resolve);
+        window.gapi.load('client', resolve);
       });
 
       await window.gapi.client.init({
@@ -136,115 +143,28 @@ export default function Schedule({ open, onClose }: ScheduleProps) {
         discoveryDocs: DISCOVERY_DOCS,
       });
 
-      console.log("GAPI client initialized");
+      console.log('GAPI client initialized');
       setIsGapiLoaded(true);
     } catch (error) {
-      console.error("Error initializing GAPI client:", error);
-      setError("Failed to initialize Google Calendar API. Please try again.");
-    }
-  };
-
-  // Handle Google Sign-in
-  const handleSignIn = async () => {
-    if (!isGapiLoaded || !isGsiLoaded) {
-      setError("Google API not loaded yet. Please wait or refresh the page.");
-      return false;
-    }
-
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      const tokenClient = window.google.accounts.oauth2.initTokenClient({
-        client_id: CLIENT_ID,
-        scope: SCOPES,
-        callback: (tokenResponse: any) => {
-          if (tokenResponse.error !== undefined) {
-            setError("Sign in failed. Please try again.");
-            setIsLoading(false);
-            return;
-          }
-          setIsSignedIn(true);
-          setIsLoading(false);
-        },
-      });
-
-      // Request an access token
-      tokenClient.requestAccessToken({ prompt: "consent" });
-      return true;
-    } catch (error) {
-      console.error("Error signing in:", error);
-      setError("Failed to sign in with Google. Please try again.");
-      setIsLoading(false);
-      return false;
+      console.error('Error initializing GAPI client:', error);
+      setError('Failed to initialize Google Calendar API. Please try again.');
     }
   };
 
   const handleSignOut = () => {
     if (window.google?.accounts?.oauth2) {
-      // Revoke token
       const token = window.gapi.client.getToken();
       if (token !== null) {
         window.google.accounts.oauth2.revoke(token.access_token);
         window.gapi.client.setToken(null);
-        setIsSignedIn(false);
         setMeetLink(null);
       }
     }
   };
 
-  const createCalendarEventWithMeet = async () => {
-    if (!window.gapi?.client) {
-      setError("Google Calendar API is not available. Please refresh and try again.");
-      return null;
-    }
-
-    try {
-      // Load the calendar API if not already loaded
-      if (!window.gapi.client.calendar) {
-        await window.gapi.client.load("calendar", "v3");
-      }
-
-      const requestId = `meet_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-
-      const event: GoogleEvent = {
-        summary: eventName,
-        description: eventDescription,
-        start: {
-          dateTime: startDate.toISOString(),
-          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        },
-        end: {
-          dateTime: endDate.toISOString(),
-          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        },
-        conferenceData: {
-          createRequest: {
-            requestId: requestId,
-            conferenceSolutionKey: {
-              type: "hangoutsMeet",
-            },
-          },
-        },
-      };
-
-      const response = await window.gapi.client.calendar.events.insert({
-        calendarId: "primary",
-        resource: event,
-        conferenceDataVersion: 1,
-      });
-
-      return response.result.hangoutLink || null;
-    } catch (error) {
-      console.error("Error creating event:", error);
-      setError(`Failed to create Google Meet: ${(error as any).message || "Unknown error"}`);
-      return null;
-    }
-  };
-
   const handleCreateMeeting = async () => {
     if (!eventName || !eventDescription) {
-      setError("Please fill in all required fields.");
+      setError('Please fill in all required fields.');
       return;
     }
 
@@ -253,31 +173,86 @@ export default function Schedule({ open, onClose }: ScheduleProps) {
       setError(null);
 
       if (!isSignedIn) {
-        const signedInSuccessfully = await handleSignIn();
+        const signedInSuccessfully = await onSignIn();
         if (!signedInSuccessfully) {
-          setError("You need to sign in with Google to create a meeting.");
-          setIsLoading(false);
+          setError('Please sign in with Google Calendar to create meetings');
           return;
         }
       }
 
-      const link = await createCalendarEventWithMeet();
-      if (link) {
-        setMeetLink(link);
-      } else {
-        setError("Meeting link could not be generated. Please try again.");
+      // Validate Google token
+      if (!window.gapi?.client?.getToken()) {
+        const signedInSuccessfully = await onSignIn();
+        if (!signedInSuccessfully) {
+          throw new Error('Google Calendar authentication required');
+        }
       }
+
+      const formattedDate = format(startDate, 'yyyy-MM-dd');
+      const formattedStartTime = format(startDate, 'HH:mm');
+      const formattedEndTime = format(endDate, 'HH:mm');
+
+      // Create the calendar event
+      const link = await createCalendarEvent({
+        eventName,
+        eventDescription,
+        meetingDate: formattedDate,
+        startTime: formattedStartTime,
+        endTime: formattedEndTime,
+      });
+
+      if (!link) {
+        throw new Error('Failed to create Google Calendar event');
+      }
+
+      // Save to MongoDB without auth token
+      const meetingResponse = await fetch('http://localhost:5000/api/meetings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: eventName.trim(),
+          description: eventDescription.trim(),
+          meetingDate: formattedDate,
+          startTime: formattedStartTime,
+          endTime: formattedEndTime,
+          meetingLink: link,
+          class: 'All Classes',
+          createdBy: localStorage.getItem('user-id') || 'unknown'
+        }),
+      });
+
+      const responseData = await meetingResponse.json();
+
+      if (!meetingResponse.ok) {
+        // If MongoDB save fails, delete the calendar event
+        try {
+          if (link) {
+            await window.gapi.client.calendar.events.delete({
+              calendarId: 'primary',
+              eventId: link.split('/').pop()
+            });
+          }
+        } catch (deleteError) {
+          console.error('Failed to delete Google Calendar event:', deleteError);
+        }
+        throw new Error(responseData.message || 'Failed to save meeting in database');
+      }
+
+      setMeetLink(link);
+      setError(null);
     } catch (error) {
-      console.error("Failed to create meeting:", error);
-      setError(`Failed to create meeting: ${(error as any).message || "Please try again."}`);
+      console.error('Failed to create meeting:', error);
+      setError(error instanceof Error ? error.message : 'An unexpected error occurred');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleClose = () => {
-    setEventName("");
-    setEventDescription("");
+    setEventName('');
+    setEventDescription('');
     setStartDate(new Date());
     setEndDate(new Date(new Date().getTime() + 30 * 60000));
     setError(null);
@@ -292,8 +267,8 @@ export default function Schedule({ open, onClose }: ScheduleProps) {
         const time = new Date();
         time.setHours(hour, minute);
         options.push({
-          value: `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`,
-          label: time.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }),
+          value: `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`,
+          label: time.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
         });
       }
     }
@@ -322,7 +297,7 @@ export default function Schedule({ open, onClose }: ScheduleProps) {
   };
 
   const handleTimeChange = (time: string, isStart: boolean) => {
-    const [hours, minutes] = time.split(":").map(Number);
+    const [hours, minutes] = time.split(':').map(Number);
 
     if (isStart) {
       const newDate = new Date(startDate);
@@ -348,8 +323,8 @@ export default function Schedule({ open, onClose }: ScheduleProps) {
           <DialogTitle className="text-xl font-semibold">Schedule Google Meet</DialogTitle>
           <DialogDescription>
             {isSignedIn
-              ? "Fill in the details to create a Google Meet conference."
-              : "Sign in with Google to create a meeting."}
+              ? 'Fill in the details to create a Google Meet conference.'
+              : 'Sign in with Google to create a meeting.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -366,7 +341,7 @@ export default function Schedule({ open, onClose }: ScheduleProps) {
               </AlertDescription>
             </Alert>
             <div className="mt-4">
-              <Button onClick={() => { navigator.clipboard.writeText(meetLink); alert("Meeting link copied to clipboard!"); }} variant="outline" className="w-full mb-2">Copy Link</Button>
+              <Button onClick={() => { navigator.clipboard.writeText(meetLink); alert('Meeting link copied to clipboard!'); }} variant="outline" className="w-full mb-2">Copy Link</Button>
               <Button onClick={handleClose} className="w-full">Close</Button>
             </div>
           </div>
@@ -378,12 +353,11 @@ export default function Schedule({ open, onClose }: ScheduleProps) {
               {!isGapiLoaded || !isGsiLoaded ? (
                 <div className="text-center">
                   <p>Loading Google API...</p>
-                  {/* You can add a spinner here */}
                 </div>
               ) : !isSignedIn ? (
                 <div className="flex justify-center mb-4">
-                  <Button onClick={handleSignIn} disabled={isLoading} className="w-full">
-                    {isLoading ? "Signing in..." : "Sign in with Google"}
+                  <Button onClick={onSignIn} disabled={isLoading} className="w-full">
+                    {isLoading ? 'Signing in...' : 'Sign in with Google'}
                   </Button>
                 </div>
               ) : (
@@ -395,28 +369,28 @@ export default function Schedule({ open, onClose }: ScheduleProps) {
 
               <div>
                 <Label htmlFor="event-name" className="font-medium">Event Name *</Label>
-                <Input 
-                  id="event-name" 
-                  value={eventName} 
-                  onChange={(e) => setEventName(e.target.value)} 
-                  className="mt-1" 
-                  placeholder="Enter event name" 
-                  required 
-                  disabled={!isSignedIn || isLoading} 
+                <Input
+                  id="event-name"
+                  value={eventName}
+                  onChange={(e) => setEventName(e.target.value)}
+                  className="mt-1"
+                  placeholder="Enter event name"
+                  required
+                  disabled={!isSignedIn || isLoading}
                 />
               </div>
 
               <div>
                 <Label htmlFor="event-description" className="font-medium">Description *</Label>
-                <Textarea 
-                  id="event-description" 
-                  value={eventDescription} 
-                  onChange={(e) => setEventDescription(e.target.value)} 
-                  className="mt-1" 
-                  rows={3} 
-                  placeholder="Enter event description" 
-                  required 
-                  disabled={!isSignedIn || isLoading} 
+                <Textarea
+                  id="event-description"
+                  value={eventDescription}
+                  onChange={(e) => setEventDescription(e.target.value)}
+                  className="mt-1"
+                  rows={3}
+                  placeholder="Enter event description"
+                  required
+                  disabled={!isSignedIn || isLoading}
                 />
               </div>
 
@@ -428,7 +402,7 @@ export default function Schedule({ open, onClose }: ScheduleProps) {
                       <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                       <Input
                         type="date"
-                        value={format(startDate, "yyyy-MM-dd")}
+                        value={format(startDate, 'yyyy-MM-dd')}
                         onChange={(e) => handleDateChange(e.target.value ? new Date(e.target.value) : null, true)}
                         className="flex-1"
                         disabled={!isSignedIn || isLoading}
@@ -437,7 +411,7 @@ export default function Schedule({ open, onClose }: ScheduleProps) {
                     <div className="flex items-center space-x-2">
                       <Clock className="h-4 w-4 text-muted-foreground" />
                       <Select
-                        value={`${startDate.getHours().toString().padStart(2, "0")}:${startDate.getMinutes().toString().padStart(2, "0")}`}
+                        value={`${startDate.getHours().toString().padStart(2, '0')}:${startDate.getMinutes().toString().padStart(2, '0')}`}
                         onValueChange={(value) => handleTimeChange(value, true)}
                         disabled={!isSignedIn || isLoading}
                       >
@@ -461,7 +435,7 @@ export default function Schedule({ open, onClose }: ScheduleProps) {
                       <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                       <Input
                         type="date"
-                        value={format(endDate, "yyyy-MM-dd")}
+                        value={format(endDate, 'yyyy-MM-dd')}
                         onChange={(e) => handleDateChange(e.target.value ? new Date(e.target.value) : null, false)}
                         className="flex-1"
                         disabled={!isSignedIn || isLoading}
@@ -470,7 +444,7 @@ export default function Schedule({ open, onClose }: ScheduleProps) {
                     <div className="flex items-center space-x-2">
                       <Clock className="h-4 w-4 text-muted-foreground" />
                       <Select
-                        value={`${endDate.getHours().toString().padStart(2, "0")}:${endDate.getMinutes().toString().padStart(2, "0")}`}
+                        value={`${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`}
                         onValueChange={(value) => handleTimeChange(value, false)}
                         disabled={!isSignedIn || isLoading}
                       >
@@ -492,7 +466,7 @@ export default function Schedule({ open, onClose }: ScheduleProps) {
             <DialogFooter className="mt-4">
               <Button variant="outline" onClick={handleClose} disabled={isLoading}>Cancel</Button>
               <Button onClick={handleCreateMeeting} disabled={isLoading || !isSignedIn}>
-                {isLoading ? "Creating..." : "Create Meeting"}
+                {isLoading ? 'Creating...' : 'Create Meeting'}
               </Button>
             </DialogFooter>
           </>
