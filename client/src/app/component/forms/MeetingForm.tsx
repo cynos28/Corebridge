@@ -41,6 +41,9 @@ const MeetingForm = ({ type, data, onSuccess, onClose }: MeetingFormProps) => {
         ? 'http://localhost:5000/api/meetings'
         : `http://localhost:5000/api/meetings/${data?._id}`;
 
+      // Ensure date is in correct format
+      const formattedDate = format(new Date(formData.meetingDate), 'yyyy-MM-dd');
+
       const response = await fetch(url, {
         method: type === 'create' ? 'POST' : 'PUT',
         headers: {
@@ -49,6 +52,7 @@ const MeetingForm = ({ type, data, onSuccess, onClose }: MeetingFormProps) => {
         },
         body: JSON.stringify({
           ...formData,
+          meetingDate: formattedDate,
           createdBy: localStorage.getItem('userId') || 'unknown'
         })
       });
@@ -61,6 +65,9 @@ const MeetingForm = ({ type, data, onSuccess, onClose }: MeetingFormProps) => {
       toast.success(`Meeting ${type === 'create' ? 'created' : 'updated'} successfully`);
       if (onSuccess) onSuccess();
       if (onClose) onClose();
+
+      // Dispatch custom event to notify BigCalendar to refresh
+      window.dispatchEvent(new CustomEvent('meeting-updated'));
     } catch (error: any) {
       toast.error(error.message || `Failed to ${type} meeting`);
     } finally {
