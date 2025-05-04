@@ -57,7 +57,8 @@ const FormModal = ({
     | "result"
     | "attendance"
     | "event"
-    | "announcement";
+    | "announcement"
+    | "meeting";
   type: "create" | "update" | "delete" | "download";
   data?: any;
   id?: number;

@@ -140,7 +140,7 @@ const MeetingListPage = () => {
                     <CardTitle className="text-lg font-semibold text-[#4A90E2]">
                       {meeting.title}
                     </CardTitle>
-                    {userRole === 'admin' && (
+                    {(userRole === 'admin' || userRole === 'teacher') && (
                       <div className="flex gap-2">
                         <FormModal table="meeting" type="update" data={meeting} />
                         <Button
