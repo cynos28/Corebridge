@@ -10,6 +10,21 @@ const TeacherForm = dynamic(() => import("./forms/TeacherForm"), {
 const StudentForm = dynamic(() => import("./forms/StudentForm"), {
   loading: () => <h1>Loading...</h1>,
 });
+const AnnouncementForm = dynamic(() => import("./forms/AnnouncementForm"), {
+  loading: () => <h1>Loading...</h1>,
+});
+const ExamForm = dynamic(() => import("./forms/ExamForm"), {
+  loading: () => <h1>Loading...</h1>,
+});
+const AssignmentForm = dynamic(() => import("./forms/AssignmentForm"), {
+  loading: () => <h1>Loading...</h1>,
+});
+const ResultForm = dynamic(() => import("./forms/ResultForm"), {
+  loading: () => <h1>Loading...</h1>,
+});
+const MeetingForm = dynamic(() => import("./forms/MeetingForm"), {
+  loading: () => <h1>Loading...</h1>,
+});
 
 const forms: {
   [key: string]: (
@@ -24,7 +39,7 @@ const forms: {
       type={type} 
       data={data} 
       onSuccess={onSuccess} 
-      onClose={onClose}
+      onClose={onClose || (() => {})}
     />
   ),
   student: (type, data, onSuccess, onClose) => (
@@ -32,7 +47,49 @@ const forms: {
       type={type} 
       data={data} 
       onSuccess={onSuccess} 
-      onClose={onClose}
+      onClose={onClose || (() => {})}
+    />
+  ),
+  announcement: (type, data, onSuccess, onClose) => (
+    <AnnouncementForm 
+      type={type} 
+      data={data} 
+      onSuccess={onSuccess} 
+      onClose={onClose || (() => {})}
+    />
+  ),
+  exam: (type, data, onSuccess, onClose) => (
+    <ExamForm
+      type={type}
+      data={data}
+      onSuccess={onSuccess}
+      onClose={onClose || (() => {})}
+    />
+  ),
+  assignment: (type, data, onSuccess, onClose) => (
+    <AssignmentForm
+      onClose={onClose || (() => {})}
+      onSubmit={(formData: FormData) => {
+        if (onSuccess) onSuccess();
+      }}
+      editData={data}
+    />
+  ),
+  result: (type, data, onSuccess, onClose) => (
+    <ResultForm
+      onClose={onClose || (() => {})}
+      onSubmit={(formData: FormData) => {
+        if (onSuccess) onSuccess();
+      }}
+      editData={data}
+    />
+  ),
+  meeting: (type, data, onSuccess, onClose) => (
+    <MeetingForm
+      type={type}
+      data={data}
+      onSuccess={onSuccess}
+      onClose={onClose || (() => {})}
     />
   ),
 };
@@ -57,7 +114,8 @@ const FormModal = ({
     | "result"
     | "attendance"
     | "event"
-    | "announcement";
+    | "announcement"
+    | "meeting";
   type: "create" | "update" | "delete" | "download";
   data?: any;
   id?: number;
@@ -69,7 +127,7 @@ const FormModal = ({
     type === "create"
       ? "bg-cbYellow"
       : type === "update"
-      ? "bg-cbSky"
+      ? "bg-cbPurple"
       : "bg-cbPurple";
 
   const [open, setOpen] = useState(false);
@@ -101,6 +159,7 @@ const FormModal = ({
       setIsSubmitting(false);
     }
   };
+
 
   const Form = () => {
     if (type === "delete" && id) {

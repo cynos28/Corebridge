@@ -30,7 +30,7 @@ const assignmentRoutes = require("./routes/assignmentRoutes");
 const examRoutes = require("./routes/examRoutes");
 const resultRoutes = require("./routes/resultsRoutes");
 const teacherRoutes = require("./routes/teacherRoutes");
-
+const meetingRoutes = require('./routes/meetingRoutes'); // Added meeting routes
 const ticketRoutes = require('./routes/ticketRoutes');
 const authRoutes = require('./routes/auth')
 const adminRoutes = require('./routes/adminRoutes');
@@ -81,6 +81,7 @@ app.use("/api/assignments", assignmentRoutes);
 app.use("/api/exams", examRoutes);
 app.use("/api/results", resultRoutes);
 app.use('/api/tickets', ticketRoutes);
+app.use('/api/meetings', meetingRoutes); // Added meeting routes
 
 // 404 handler (adds JSON content type)
 app.use((req, res, next) => {
