@@ -12,10 +12,29 @@ const StudentForm = dynamic(() => import("./forms/StudentForm"), {
 });
 
 const forms: {
-  [key: string]: (type: "create" | "update", data?: any) => JSX.Element;
+  [key: string]: (
+    type: "create" | "update", 
+    data?: any, 
+    onSuccess?: () => void,
+    onClose?: () => void
+  ) => JSX.Element;
 } = {
-  teacher: (type, data) => <TeacherForm type={type} data={data} />,
-  student: (type, data) => <StudentForm type={type} data={data} />,
+  teacher: (type, data, onSuccess, onClose) => (
+    <TeacherForm 
+      type={type} 
+      data={data} 
+      onSuccess={onSuccess} 
+      onClose={onClose}
+    />
+  ),
+  student: (type, data, onSuccess, onClose) => (
+    <StudentForm 
+      type={type} 
+      data={data} 
+      onSuccess={onSuccess} 
+      onClose={onClose}
+    />
+  ),
 };
 
 const FormModal = ({
@@ -38,7 +57,8 @@ const FormModal = ({
     | "result"
     | "attendance"
     | "event"
-    | "announcement";
+    | "announcement"
+    | "meeting";
   type: "create" | "update" | "delete" | "download";
   data?: any;
   id?: number;
@@ -50,7 +70,7 @@ const FormModal = ({
     type === "create"
       ? "bg-cbYellow"
       : type === "update"
-      ? "bg-cbSky"
+      ? "bg-cbPurple"
       : "bg-cbPurple";
 
   const [open, setOpen] = useState(false);
@@ -84,32 +104,36 @@ const FormModal = ({
   };
 
   const Form = () => {
-    return type === "delete" && id ? (
-      <form onSubmit={(e) => {
-        e.preventDefault();
-        handleDelete();
-      }} className="p-4 flex flex-col gap-4">
-        {error && (
-          <div className="bg-red-50 text-red-500 p-3 rounded-md text-sm">
-            {error}
-          </div>
-        )}
-        <span className="text-center font-medium">
-          All data will be lost. Are you sure you want to delete this {table}?
-        </span>
-        <button 
-          type="submit"
-          disabled={isSubmitting}
-          className="bg-red-700 text-white py-2 px-4 rounded-md border-none w-max self-center disabled:bg-gray-400"
-        >
-          {isSubmitting ? 'Deleting...' : 'Delete'}
-        </button>
-      </form>
-    ) : type === "create" || type === "update" ? (
-      forms[table](type, data, onSuccess)
-    ) : (
-      "Form not found!"
-    );
+    if (type === "delete" && id) {
+      return (
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          handleDelete();
+        }} className="p-4 flex flex-col gap-4">
+          {error && (
+            <div className="bg-red-50 text-red-500 p-3 rounded-md text-sm">
+              {error}
+            </div>
+          )}
+          <span className="text-center font-medium">
+            All data will be lost. Are you sure you want to delete this {table}?
+          </span>
+          <button 
+            type="submit"
+            disabled={isSubmitting}
+            className="bg-red-700 text-white py-2 px-4 rounded-md border-none w-max self-center disabled:bg-gray-400"
+          >
+            {isSubmitting ? 'Deleting...' : 'Delete'}
+          </button>
+        </form>
+      );
+    }
+    
+    if (type === "create" || type === "update") {
+      return forms[table](type, data, onSuccess, () => setOpen(false));
+    }
+    
+    return "Form not found!";
   };
 
   const Button = () => {
