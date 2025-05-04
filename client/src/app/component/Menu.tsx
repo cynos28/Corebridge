@@ -79,7 +79,7 @@ const menuItems = [
         icon: '/calendar.png',
         label: 'Meetings',
         href: '/list/meetings',
-        visible: ['admin', 'teacher', 'student', 'parent'],
+        visible: ['admin', 'teacher'], // Only admin and teacher can manage meetings
       },
       {
         icon: '/message.png',

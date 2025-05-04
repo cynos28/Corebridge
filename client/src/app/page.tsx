@@ -1,10 +1,10 @@
 "use client"
 
+import { useRouter } from "next/navigation"
 import { useEffect, useState, useRef } from "react"
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion"
 import SignInDialog from "./component/SignInDialog"
 import { SignInCredentials } from "./types/auth"
-import { useRouter } from "next/router"
 
 // Animation variants for different elements
 const containerVariants = {
@@ -1157,77 +1157,15 @@ export default function Page() {
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="col-span-1 md:col-span-2">
-              <h3 className="text-2xl font-bold mb-4">Corebridge</h3>
-              <p className="text-white/80 mb-4 max-w-md">
-                Empowering schools with smarter management solutions. Our platform helps educational institutions
-                streamline operations and focus on what matters most: education.
+              <h3 className="text-2xl font-bold mb-6">Corebridge</h3>
+              <p className="text-white/80 mb-6">
+                Empowering educational institutions with intelligent management solutions.
               </p>
-              <div className="flex space-x-4">
-                {["twitter", "facebook", "instagram", "linkedin"].map((social) => (
-                  <motion.a
-                    key={social}
-                    href="#"
-                    className="bg-white/10 p-2 rounded-full hover:bg-white/20 transition-colors"
-                    whileHover={{ scale: 1.1 }}
-                  >
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 0c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm-2 16h-2v-6h2v6zm-1-6.891c-.607 0-1.1-.496-1.1-1.109 0-.612.492-1.109 1.1-1.109s1.1.497 1.1 1.109c0 .613-.493 1.109-1.1 1.109zm8 6.891h-1.998v-2.861c0-1.881-2.002-1.722-2.002 0v2.861h-2v-6h2v1.093c.872-1.616 4-1.736 4 1.548v3.359z" />
-                    </svg>
-                  </motion.a>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <h4 className="font-bold text-lg mb-4">Quick Links</h4>
-              <ul className="space-y-2">
-                {["Home", "Features", "Pricing", "Testimonials", "Contact"].map((link) => (
-                  <li key={link}>
-                    <motion.a
-                      href={`#${link.toLowerCase()}`}
-                      className="text-white/80 hover:text-white transition-colors"
-                      whileHover={{ x: 5 }}
-                    >
-                      {link}
-                    </motion.a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-bold text-lg mb-4">Resources</h4>
-              <ul className="space-y-2">
-                {["Blog", "Help Center", "Documentation", "API", "Privacy Policy", "Terms of Service"].map((link) => (
-                  <li key={link}>
-                    <motion.a
-                      href="#"
-                      className="text-white/80 hover:text-white transition-colors"
-                      whileHover={{ x: 5 }}
-                    >
-                      {link}
-                    </motion.a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-
-          <div className="border-t border-white/20 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
-            <p className="text-white/80 text-sm">© {new Date().getFullYear()} Corebridge. All rights reserved.</p>
-            <div className="mt-4 md:mt-0">
-              <motion.button
-                className="bg-white text-[#ba9df1] px-6 py-2 rounded-full text-sm font-medium hover:bg-[#f5f5f5] transition-all"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                Get Started Today
-              </motion.button>
             </div>
           </div>
         </div>
       </footer>
     </div>
-  )
+  );
 }
 
