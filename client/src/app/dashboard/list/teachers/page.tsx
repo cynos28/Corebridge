@@ -39,6 +39,7 @@ const columns = [
 const TeacherListPage = () => {
   const [teachers, setTeachers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Fetch teachers from the backend API
   const fetchTeachers = async () => {
@@ -141,6 +142,13 @@ const TeacherListPage = () => {
   useEffect(() => {
     fetchTeachers();
   }, []);
+
+  const filteredStudent = teachers.filter((item) =>
+    item.firstName.toLowerCase().includes(searchTerm.toLowerCase())
+    || item.lastName.toLowerCase().includes(searchTerm.toLowerCase())
+    || item.phone?.toString().includes(searchTerm.toLowerCase())
+  );
+
 
   // Render a row for each teacher in the table
   const renderRow = (teacher: any) => (
@@ -249,7 +257,10 @@ const TeacherListPage = () => {
       <div className="flex items-center justify-between">
         <h1 className="hidden md:block text-lg font-semibold">All Teachers</h1>
         <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-          <TableSearch />
+        <TableSearch
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
           <div className="flex items-center gap-4 self-end">
             <button className="w-8 h-8 flex items-center justify-center rounded-full bg-cbYellow">
               <Image src="/filter.png" alt="Filter" width={14} height={14} />
@@ -263,7 +274,7 @@ const TeacherListPage = () => {
         </div>
       </div>
       {/* Teacher Table */}
-      <Table columns={columns} renderRow={renderRow} data={teachers} />
+      <Table columns={columns} renderRow={renderRow} data={filteredStudent} />
       {/* Pagination Component */}
       <Pagination />
     </div>

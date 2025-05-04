@@ -1018,3 +1018,17 @@ export const calendarEvents = [
     end: new Date(2024, 7, 16, 14, 45),
   },
 ];
+export const messagesData = [
+  {
+    id: 1,
+    sender: "Principal",
+    recipient: "All Parents",
+    messege: "School Closure Notice",
+  },
+  {
+    id: 2,
+    sender: "Admin",
+    recipient: "Grade 10",
+    messege: "Parent-Teacher Meeting",
+  },
+];
