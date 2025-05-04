@@ -1,146 +1,166 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import Image from "next/image";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from 'react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 const menuItems = [
-    {
-      title: "MENU",
-      items: [
-        {
-          icon: "/home.png",
-          label: "Home",
-          href: "/",
-          visible: ["admin", "teacher", "student", "parent"],
-        },
-        {
-          icon: "/teacher.png",
-          label: "Teachers",
-          href: "/list/teachers",
-          visible: ["admin", "teacher"],
-        },
-        {
-          icon: "/student.png",
-          label: "Students",
-          href: "/list/students",
-          visible: ["admin", "teacher"],
-        },
-        {
-          icon: "/parent.png",
-          label: "Parents",
-          href: "/list/parents",
-          visible: ["admin", "teacher"],
-        },
-        {
-          icon: "/subject.png",
-          label: "Subjects",
-          href: "/list/subjects",
-          visible: ["admin"],
-        },
-        {
-          icon: "/class.png",
-          label: "Classes",
-          href: "/list/classes",
-          visible: ["admin", "teacher"],
-        },
-        {
-          icon: "/lesson.png",
-          label: "Lessons",
-          href: "/list/lessons",
-          visible: ["admin", "teacher"],
-        },
-        {
-          icon: "/exam.png",
-          label: "Exams",
-          href: "/list/exams",
-          visible: ["admin", "teacher", "student", "parent"],
-        },
-        {
-          icon: "/assignment.png",
-          label: "Assignments",
-          href: "/list/assignments",
-          visible: ["admin", "teacher", "student", "parent"],
-        },
-        {
-          icon: "/result.png",
-          label: "Results",
-          href: "/list/results",
-          visible: ["admin", "teacher", "student", "parent"],
-        },
-        {
-          icon: "/calendar.png",
-          label: "Meetings",
-          href: "/list/meetings",
-          visible: ["admin", "teacher", "student", "parent"],
-        },
-        {
-          icon: "/message.png",
-          label: "Messages",
-          href: "/list/messages",
-          visible: ["admin", "teacher", "student", "parent"],
-        },
-        {
-          icon: "/announcement.png",
-          label: "Announcements",
-          href: "/list/announcements",
-          visible: ["admin", "teacher", "student", "parent"],
-        },
-        {
-          icon: "/tickets.png",
-          label: "Tickets",
-          href: "/list/tickets",
-          visible: ["admin", "student"],
-        },
-      ],
-    },
 
-
-    {
-      title: "OTHER",
-      items: [
-        {
-          icon: "/profile.png",
-          label: "Profile",
-          href: "/profile",
-          visible: ["admin", "teacher", "student", "parent"],
-        },
-        {
-          icon: "/setting.png",
-          label: "Settings",
-          href: "/settings",
-          visible: ["admin", "teacher", "student", "parent"],
-        },
-        {
-          icon: "/logout.png",
-          label: "Logout",
-          href: "/logout",
-          visible: ["admin", "teacher", "student", "parent"],
-        },
-      ],
-    },
-  ];
-  
+  {
+    title: 'MENU',
+    items: [
+      {
+        icon: '/home.png',
+        label: 'Home',
+        href: '/', // This will be dynamically updated based on role
+        visible: ['admin', 'teacher', 'student', 'parent'],
+      },
+      {
+        icon: '/teacher.png',
+        label: 'Teachers',
+        href: '/list/teachers',
+        visible: ['admin', 'teacher'],
+      },
+      {
+        icon: '/student.png',
+        label: 'Students',
+        href: '/list/students',
+        visible: ['admin', 'teacher'],
+      },
+      {
+        icon: '/parent.png',
+        label: 'Parents',
+        href: '/list/parents',
+        visible: ['admin', 'teacher'],
+      },
+      {
+        icon: '/subject.png',
+        label: 'Subjects',
+        href: '/list/subjects',
+        visible: ['admin'],
+      },
+      {
+        icon: '/class.png',
+        label: 'Classes',
+        href: '/list/classes',
+        visible: ['admin', 'teacher'],
+      },
+      {
+        icon: '/lesson.png',
+        label: 'Lessons',
+        href: '/list/lessons',
+        visible: ['admin', 'teacher'],
+      },
+      {
+        icon: '/exam.png',
+        label: 'Exams',
+        href: '/list/exams',
+        visible: ['admin', 'teacher', 'student', 'parent'],
+      },
+      {
+        icon: '/assignment.png',
+        label: 'Assignments',
+        href: '/list/assignments',
+        visible: ['admin', 'teacher', 'student', 'parent'],
+      },
+      {
+        icon: '/result.png',
+        label: 'Results',
+        href: '/list/results',
+        visible: ['admin', 'teacher', 'student', 'parent'],
+      },
+      {
+        icon: '/attendance.png',
+        label: 'Attendance',
+        href: '/list/attendance',
+        visible: ['admin', 'teacher', 'student', 'parent'],
+      },
+      {
+        icon: '/calendar.png',
+        label: 'Meetings',
+        href: '/list/meetings',
+        visible: ['admin', 'teacher'], // Only admin and teacher can manage meetings
+      },
+      {
+        icon: '/message.png',
+        label: 'Messages',
+        href: '/list/messages',
+        visible: ['admin', 'teacher', 'student', 'parent'],
+      },
+      {
+        icon: '/announcement.png',
+        label: 'Announcements',
+        href: '/list/announcements', // Fixed incorrect route
+        visible: ['admin', 'teacher', 'student', 'parent'],
+      },
+      {
+        icon: '/tickets.png',
+        label: 'Tickets',
+        href: '/list/tickets',
+        visible: ['admin', 'student'],
+      },
+    ],
+  },
+  {
+    title: 'OTHER',
+    items: [
+      {
+        icon: '/profile.png',
+        label: 'Profile',
+        href: '/profile',
+        visible: ['admin', 'teacher', 'student', 'parent'],
+      },
+      {
+        icon: '/setting.png',
+        label: 'Settings',
+        href: '/settings',
+        visible: ['admin', 'teacher', 'student', 'parent'],
+      },
+      {
+        icon: '/logout.png',
+        label: 'Logout',
+        href: '/logout',
+        visible: ['admin', 'teacher', 'student', 'parent'],
+      },
+    ],
+  },
+];
 
 const Menu = () => {
   const router = useRouter();
-  const [userRole, setUserRole] = useState("admin"); // default role
+  const [userRole, setUserRole] = useState('admin');
 
   useEffect(() => {
-    const storedRole = localStorage.getItem("user-role");
+    const storedRole = localStorage.getItem('user-role');
     if (storedRole) {
       setUserRole(storedRole);
     } else {
-      setUserRole("admin"); // Default to admin
+      setUserRole('admin');
     }
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("auth-token");
-    localStorage.removeItem("user-role");
-    setUserRole(""); // update role on logout
-    router.push("/");
+    localStorage.removeItem('auth-token');
+    localStorage.removeItem('user-role');
+    setUserRole('');
+    router.push('/');
+  };
+
+  // Function to determine the home route based on user role
+  const getHomeRoute = (role) => {
+    switch (role) {
+      case 'admin':
+        return '/dashboard/admin';
+      case 'teacher':
+        return '/dashboard/teacher';
+      case 'student':
+        return '/dashboard/student';
+      case 'parent':
+        return '/'; // Default for parent, or change to '/dashboard/parent' if needed
+      default:
+        return '/';
+    }
   };
 
   return (
@@ -152,7 +172,10 @@ const Menu = () => {
           </span>
           {group.items.map((item) => {
             if (item.visible.includes(userRole)) {
-              if (item.label === "Logout") {
+              // Dynamically set the href for the Home item
+              const itemHref = item.label === 'Home' ? getHomeRoute(userRole) : item.href;
+
+              if (item.label === 'Logout') {
                 return (
                   <button
                     key={item.label}
@@ -172,7 +195,7 @@ const Menu = () => {
               }
               return (
                 <Link
-                  href={item.href}
+                  href={itemHref}
                   key={item.label}
                   className="flex items-center justify-center lg:justify-start gap-4 text-gray-500 py-2 md:px-2 rounded-md hover:bg-[#f3eefc] hover:text-[#9d75eb]"
                 >
