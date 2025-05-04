@@ -15,6 +15,10 @@ import { HiDocumentArrowDown } from "react-icons/hi2";
 import { HiOutlinePencilSquare } from "react-icons/hi2";
 import { HiMiniArchiveBoxXMark } from "react-icons/hi2";
 import { GrDownload } from "react-icons/gr";
+import CustomAssignmentReport from "@/app/component/CustomAssigmentReport"; // Adjust path if needed
+import { HiMiniXCircle } from "react-icons/hi2"; // For toggle close
+
+
 
 type Assignment = {
   _id: string;
@@ -52,6 +56,8 @@ const AssignmentListPage = () => {
   const [editItem, setEditItem] = useState<Assignment | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [role, setRole] = useState<string>("");
+  const [showCustomAssignmentReport, setShowCustomAssignmentReport] =
+    useState(false);
 
   useEffect(() => {
     // Get role from localStorage when component mounts
@@ -250,24 +256,25 @@ const AssignmentListPage = () => {
     item.subjectName.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const downloadPDF = async () => {
-    const input = document.getElementById("assignmentSheet");
+  const downloadCustomAssignmentReportPDF = async () => {
+    const input = document.getElementById("customAssignmentReport");
     if (!input) return;
-
+  
     try {
       const canvas = await html2canvas(input);
       const imgData = canvas.toDataURL("image/png");
-
+  
       const pdf = new jsPDF();
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-
+  
       pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-      pdf.save("assignment-report.pdf");
+      pdf.save("custom-assignment-report.pdf");
     } catch (error) {
       console.error("Error generating PDF:", error);
     }
   };
+  
 
   const renderRow = (item: Assignment) => (
     <tr
@@ -387,13 +394,8 @@ const AssignmentListPage = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
           <div className="flex items-center gap-4 self-end">
-            <button
-              onClick={downloadPDF}
-              className="w-8 h-8 flex items-center justify-center rounded-full bg-cbYellow"
-            >
-              <HiDocumentArrowDown size={18} />
-            </button>
-
+          <button onClick={() => setShowCustomAssignmentReport(!showCustomAssignmentReport)} className="w-8 h-8 flex items-center justify-center rounded-full bg-cbYellow text-xs">{showCustomAssignmentReport ? <HiMiniXCircle size={18} /> : <HiDocumentArrowDown size={18} />}</button>
+            
             <button className="w-8 h-8 flex items-center justify-center rounded-full bg-cbYellow">
               <Image src="/filter.png" alt="Filter" width={14} height={14} />
             </button>
@@ -413,26 +415,25 @@ const AssignmentListPage = () => {
       </div>
 
       {/* Assignment Sheet Container */}
-      <div
-        id="assignmentSheet"
-        className="bg-white p-4 rounded-md flex-1 m-4 mt-0"
-      >
-        <Table
-          columns={columns}
-          renderRow={renderRow}
-          data={filteredAssignments}
-        />
-      </div>
+      {showCustomAssignmentReport ? (
+        <div>
+          <CustomAssignmentReport data={filteredAssignments} />
+          <div className="flex justify-center gap-4 mt-4">
+            <button onClick={downloadCustomAssignmentReportPDF} className="px-4 py-2 bg-[#E9A5F1] text-white rounded-md hover:bg-[#C68EFD]">Download PDF</button>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-white p-4 rounded-md flex-1 m-4 mt-0">
+          <Table columns={columns} renderRow={renderRow} data={filteredAssignments} />
+        </div>
+      )}
 
       <Pagination />
 
       {isFormOpen && (
-        <AssignmentForm
-          onClose={() => setIsFormOpen(false)}
-          onSubmit={handleFormSubmit}
-          editData={isEditMode ? editItem : null}
-        />
+        <AssignmentForm onClose={() => setIsFormOpen(false)} onSubmit={handleFormSubmit} editData={isEditMode ? editItem : null} />
       )}
+
       <Toaster position="top-center" />
     </div>
   );
