@@ -148,8 +148,6 @@ const ResultListPage = () => {
     (item.subjectName || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
- 
-
   // PDF generation for the custom report view
   const downloadCustomReportPDF = async () => {
     const input = document.getElementById("customReport");
@@ -171,42 +169,50 @@ const ResultListPage = () => {
   const generateResultPDF = (result: Result) => {
     // Create a new PDF document
     const doc = new jsPDF();
-    
+
     // Add title
     doc.setFontSize(20);
     doc.setTextColor(44, 62, 80);
-    doc.text("Student Result Details", 105, 20, { align: 'center' });
-    
+    doc.text("Student Result Details", 105, 20, { align: "center" });
+
     // Add school header
     doc.setFontSize(14);
     doc.setTextColor(52, 73, 94);
-    doc.text("Corebridge Education System", 105, 30, { align: 'center' });
-    
+    doc.text("Corebridge Education System", 105, 30, { align: "center" });
+
     // Add date
     doc.setFontSize(10);
     doc.setTextColor(100, 100, 100);
     const today = new Date();
-    doc.text(`Generated on: ${today.toLocaleDateString()}`, 105, 40, { align: 'center' });
-    
+    doc.text(`Generated on: ${today.toLocaleDateString()}`, 105, 40, {
+      align: "center",
+    });
+
     // Add result information
     doc.setFontSize(12);
     doc.setTextColor(0, 0, 0);
-    
+
     // Start y position
     let y = 60;
-    
+
     // Add result details
-    doc.text(`Subject: ${result.subjectName}`, 20, y); y += 10;
-    doc.text(`Student: ${result.student}`, 20, y); y += 10;
-    doc.text(`Score: ${result.score}`, 20, y); y += 10;
-    doc.text(`Teacher: ${result.teacherName}`, 20, y); y += 10;
-    doc.text(`Class: ${result.className}`, 20, y); y += 10;
-    doc.text(`Date: ${new Date(result.dueDate).toLocaleDateString()}`, 20, y); y += 10;
-    
+    doc.text(`Subject: ${result.subjectName}`, 20, y);
+    y += 10;
+    doc.text(`Student: ${result.student}`, 20, y);
+    y += 10;
+    doc.text(`Score: ${result.score}`, 20, y);
+    y += 10;
+    doc.text(`Teacher: ${result.teacherName}`, 20, y);
+    y += 10;
+    doc.text(`Class: ${result.className}`, 20, y);
+    y += 10;
+    doc.text(`Date: ${new Date(result.dueDate).toLocaleDateString()}`, 20, y);
+    y += 10;
+
     // Add grade assessment
     let grade = "";
     let gradeColor = [0, 0, 0];
-    
+
     if (result.score >= 90) {
       grade = "A (Excellent)";
       gradeColor = [46, 125, 50]; // Green
@@ -223,17 +229,22 @@ const ResultListPage = () => {
       grade = "F (Needs Improvement)";
       gradeColor = [244, 67, 54]; // Red
     }
-    
+
     y += 10;
     doc.setTextColor(gradeColor[0], gradeColor[1], gradeColor[2]);
     doc.setFontSize(14);
     doc.text(`Grade: ${grade}`, 20, y);
-    
+
     // Add footer
     doc.setFontSize(10);
     doc.setTextColor(100, 100, 100);
-    doc.text("This is an official document from Corebridge Education System", 105, 280, { align: 'center' });
-    
+    doc.text(
+      "This is an official document from Corebridge Education System",
+      105,
+      280,
+      { align: "center" }
+    );
+
     // Save the PDF
     doc.save(`result_${result.student}_${result.subjectName}.pdf`);
   };
@@ -293,12 +304,15 @@ const ResultListPage = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
           <div className="flex items-center gap-4 self-end">
-          <button
+            <button
               onClick={() => setShowCustomReport(!showCustomReport)}
               className="w-8 h-8 flex items-center justify-center rounded-full bg-cbYellow text-xs"
-
             >
-              {showCustomReport ? <HiMiniXCircle size={18}/> : <HiDocumentArrowDown size={18} />}
+              {showCustomReport ? (
+                <HiMiniXCircle size={18} />
+              ) : (
+                <HiDocumentArrowDown size={18} />
+              )}
             </button>
             <button className="w-8 h-8 flex items-center justify-center rounded-full bg-cbYellow">
               <Image src="/filter.png" alt="Filter" width={14} height={14} />
@@ -315,7 +329,6 @@ const ResultListPage = () => {
               </button>
             )}
             {/* Toggle for custom report view */}
-            
           </div>
         </div>
       </div>
@@ -334,8 +347,15 @@ const ResultListPage = () => {
           </div>
         </div>
       ) : (
-        <div id="resultSheet" className="bg-white p-4 rounded-md flex-1 m-4 mt-0">
-          <Table columns={columns} renderRow={renderRow} data={filteredResults} />
+        <div
+          id="resultSheet"
+          className="bg-white p-4 rounded-md flex-1 m-4 mt-0"
+        >
+          <Table
+            columns={columns}
+            renderRow={renderRow}
+            data={filteredResults}
+          />
         </div>
       )}
 
