@@ -1,6 +1,7 @@
 const Assignment = require('../models/Assignments');
-const fs         = require('fs');
-const path       = require('path');
+const fs = require('fs');
+const fsPromises = require('fs').promises;
+const path = require('path');
 
 // CREATE
 exports.createAssignment = async (req, res) => {
@@ -27,16 +28,23 @@ exports.createAssignment = async (req, res) => {
 exports.getAssignments = async (req, res) => {
   try {
     let assignments = await Assignment.find();
-    if (req.user.role === 'student') {
+    if (req.user && req.user.role === 'student' && req.user.userId) {
       assignments = assignments.map(a => {
         const obj = a.toObject();
-        const sub = a.submissions.find(s => s.student.toString() === req.user.userId);
-        if (sub) obj.studentSubmission = {
-          filePath: sub.filePath,
-          submittedAt: sub.submittedAt,
-          grade: sub.grade,
-          feedback: sub.feedback
-        };
+        // Check if submissions exist and are valid
+        if (a.submissions && Array.isArray(a.submissions)) {
+          const sub = a.submissions.find(s => 
+            s && s.student && s.student.toString() === req.user.userId
+          );
+          if (sub) {
+            obj.studentSubmission = {
+              filePath: sub.filePath,
+              submittedAt: sub.submittedAt,
+              grade: sub.grade,
+              feedback: sub.feedback
+            };
+          }
+        }
         return obj;
       });
     }
@@ -119,26 +127,68 @@ exports.downloadAssignment = async (req, res) => {
 // Submit assignment (student)
 exports.submitAssignment = async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
     const { studentId } = req.body;
-    if (!studentId) return res.status(400).json({ message: 'Student ID is required' });
+    if (!studentId) {
+      return res.status(400).json({ message: 'Student ID is required' });
+    }
+
     const assignment = await Assignment.findById(req.params.id);
-    if (!assignment) return res.status(404).json({ message: 'Assignment not found' });
+    if (!assignment) {
+      return res.status(404).json({ message: 'Assignment not found' });
+    }
+
+    // Initialize submissions array if it doesn't exist
+    if (!assignment.submissions) {
+      assignment.submissions = [];
+    }
+
     const now = new Date();
     const due = new Date(assignment.dueDate);
     const isLate = now > due;
-    const idx = assignment.submissions.findIndex(sub => sub.student.toString() === studentId);
+
+    // Ensure studentId is a string before comparison
+    const idx = assignment.submissions.findIndex(sub => 
+      sub && sub.student && sub.student.toString() === studentId.toString()
+    );
+
     if (idx !== -1) {
+      // Update existing submission
       const old = assignment.submissions[idx];
       const oldPath = path.join(__dirname, '../uploads/submissions', path.basename(old.filePath));
-      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
-      assignment.submissions[idx] = { ...old, filePath: req.file.filename, submittedAt: now };
+      if (fs.existsSync(oldPath)) {
+        await fsPromises.unlink(oldPath).catch(console.error);
+      }
+      assignment.submissions[idx] = {
+        ...old,
+        filePath: req.file.filename,
+        submittedAt: now
+      };
     } else {
-      assignment.submissions.push({ student: studentId, filePath: req.file.filename, submittedAt: now });
+      // Add new submission
+      assignment.submissions.push({
+        student: studentId,
+        filePath: req.file.filename,
+        submittedAt: now
+      });
     }
+
     await assignment.save();
-    res.status(201).json({ message: isLate ? 'Assignment submitted late' : 'Assignment submitted successfully', isLate });
+    res.status(201).json({
+      message: isLate ? 'Assignment submitted late' : 'Assignment submitted successfully',
+      isLate
+    });
   } catch (error) {
+    // Cleanup uploaded file if something fails
+    if (req.file) {
+      const filePath = path.join(__dirname, '../uploads/submissions', req.file.filename);
+      if (fs.existsSync(filePath)) {
+        await fsPromises.unlink(filePath).catch(console.error);
+      }
+    }
     console.error('Error submitting assignment:', error);
     res.status(500).json({ message: 'Error submitting assignment', error: error.message });
   }
