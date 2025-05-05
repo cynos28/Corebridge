@@ -7,12 +7,6 @@ import Pagination from "@/app/component/Pagination";
 import Table from "@/app/component/Table";
 import TableSearch from "@/app/component/TableSearch";
 import FormModal from "@/app/component/FormModal";
-import { jsPDF } from "jspdf";
-import html2canvas from "html2canvas";
-import CustomTeacherReport from "@/app/component/CustomTeacherReport"; 
-import { HiDocumentArrowDown, HiMiniDocumentText } from "react-icons/hi2";
-import { HiMiniXCircle } from "react-icons/hi2";// adjust path if needed
-
 // Define table columns. You can adjust the headers and classes as needed.
 const columns = [
   {
@@ -46,8 +40,6 @@ const TeacherListPage = () => {
   const [teachers, setTeachers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [showTeacherReport, setShowTeacherReport] = useState(false);
-
 
   // Fetch teachers from the backend API
   const fetchTeachers = async () => {
@@ -157,22 +149,6 @@ const TeacherListPage = () => {
     || item.phone?.toString().includes(searchTerm.toLowerCase())
   );
 
-  const downloadTeacherReportPDF = async () => {
-    const input = document.getElementById("customTeacherReport");
-    if (!input) return;
-    try {
-      const canvas = await html2canvas(input);
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF();
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-      pdf.save("teacher-report.pdf");
-    } catch (error) {
-      console.error("Error generating PDF:", error);
-    }
-  };
-  
 
   // Render a row for each teacher in the table
   const renderRow = (teacher: any) => (
@@ -285,13 +261,6 @@ const TeacherListPage = () => {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
-              <button
-  onClick={() => setShowTeacherReport(!showTeacherReport)}
-  className="w-8 h-8 flex items-center justify-center rounded-full bg-cbYellow text-xs"
->
-  {showTeacherReport ? <HiMiniXCircle size={18} /> : <HiDocumentArrowDown size={18} />}
-</button>
-
           <div className="flex items-center gap-4 self-end">
             <button className="w-8 h-8 flex items-center justify-center rounded-full bg-cbYellow">
               <Image src="/filter.png" alt="Filter" width={14} height={14} />
