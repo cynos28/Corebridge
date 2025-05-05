@@ -9,9 +9,9 @@ import TableSearch from "@/app/component/TableSearch";
 import FormModal from "@/app/component/FormModal";
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
-import CustomTeacherReport from "@/app/component/CustomTeacherReport"; 
+import CustomTeacherReport from "@/app/component/CustomTeacherReport";
 import { HiDocumentArrowDown, HiMiniDocumentText } from "react-icons/hi2";
-import { HiMiniXCircle } from "react-icons/hi2";// adjust path if needed
+import { HiMiniXCircle } from "react-icons/hi2"; // adjust path if needed
 
 // Define table columns. You can adjust the headers and classes as needed.
 const columns = [
@@ -48,20 +48,19 @@ const TeacherListPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showTeacherReport, setShowTeacherReport] = useState(false);
 
-
   // Fetch teachers from the backend API
   const fetchTeachers = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       const res = await fetch("http://localhost:5000/api/teachers", {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
       });
 
       if (res.status === 401) {
-        localStorage.removeItem('token');
+        localStorage.removeItem("token");
         // You may want to redirect to login page here
         return;
       }
@@ -80,42 +79,42 @@ const TeacherListPage = () => {
 
   const handleDelete = async (id: string) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       const response = await fetch(`http://localhost:5000/api/teachers/${id}`, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
       });
 
       if (response.status === 401) {
-        localStorage.removeItem('token');
+        localStorage.removeItem("token");
         // You may want to redirect to login page here
         return;
       }
 
       if (!response.ok) {
-        throw new Error('Failed to delete teacher');
+        throw new Error("Failed to delete teacher");
       }
 
       await fetchTeachers(); // Refresh the list
     } catch (error) {
-      console.error('Error deleting teacher:', error);
+      console.error("Error deleting teacher:", error);
     }
   };
 
   const handleUpdate = async (id: string, updatedData: any) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       const formData = new FormData();
-      
+
       // Add all fields from updatedData to formData
       Object.entries(updatedData).forEach(([key, value]) => {
-        if (key === 'subjects' && Array.isArray(value)) {
+        if (key === "subjects" && Array.isArray(value)) {
           // Handle subjects array specially
           value.forEach((subject: string) => {
-            formData.append('subjects[]', subject);
+            formData.append("subjects[]", subject);
           });
         } else if (value !== null && value !== undefined) {
           formData.append(key, value as string);
@@ -125,22 +124,22 @@ const TeacherListPage = () => {
       const response = await fetch(`http://localhost:5000/api/teachers/${id}`, {
         method: "PUT",
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
           // Remove Content-Type header to let browser set it with boundary for FormData
         },
         body: formData,
       });
 
       if (response.status === 401) {
-        localStorage.removeItem('token');
+        localStorage.removeItem("token");
         // You may want to redirect to login page here
         return;
       }
-  
+
       if (!response.ok) {
         throw new Error("Failed to update teacher");
       }
-  
+
       await fetchTeachers(); // Refresh the list
     } catch (error) {
       console.error("Error updating teacher:", error);
@@ -151,10 +150,11 @@ const TeacherListPage = () => {
     fetchTeachers();
   }, []);
 
-  const filteredStudent = teachers.filter((item) =>
-    item.firstName.toLowerCase().includes(searchTerm.toLowerCase())
-    || item.lastName.toLowerCase().includes(searchTerm.toLowerCase())
-    || item.phone?.toString().includes(searchTerm.toLowerCase())
+  const filteredStudent = teachers.filter(
+    (item) =>
+      item.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.phone?.toString().includes(searchTerm.toLowerCase())
   );
 
   const downloadTeacherReportPDF = async () => {
@@ -172,7 +172,105 @@ const TeacherListPage = () => {
       console.error("Error generating PDF:", error);
     }
   };
-  
+
+  const generateTeacherPDF = (teacher: any) => {
+    // Create a new PDF document
+    const doc = new jsPDF();
+
+    // Add title
+    doc.setFontSize(20);
+    doc.setTextColor(44, 62, 80);
+    doc.text("Teacher Profile", 105, 20, { align: "center" });
+
+    // Add school header
+    doc.setFontSize(14);
+    doc.setTextColor(52, 73, 94);
+    doc.text("Corebridge Education System", 105, 30, { align: "center" });
+
+    // Add date
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    const today = new Date();
+    doc.text(`Generated on: ${today.toLocaleDateString()}`, 105, 40, {
+      align: "center",
+    });
+
+    // Add teacher information
+    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0);
+
+    // Define y coordinate starting point for teacher details
+    let y = 60;
+
+    // Add teacher details with section formatting
+    doc.setFontSize(14);
+    doc.setTextColor(0, 102, 204);
+    doc.text("Personal Information", 20, y);
+    y += 10;
+
+    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0);
+    doc.text(`Name: ${teacher.firstName} ${teacher.lastName}`, 20, y);
+    y += 10;
+    doc.text(`Teacher ID: ${teacher.teacherId || "Not assigned"}`, 20, y);
+    y += 10;
+    doc.text(`Email: ${teacher.email || "N/A"}`, 20, y);
+    y += 10;
+    doc.text(`Phone: ${teacher.phone || "N/A"}`, 20, y);
+    y += 10;
+    doc.text(`Blood Type: ${teacher.bloodType || "N/A"}`, 20, y);
+    y += 10;
+    doc.text(`Address: ${teacher.address || "N/A"}`, 20, y);
+    y += 15;
+
+    // Add teaching information
+    doc.setFontSize(14);
+    doc.setTextColor(0, 102, 204);
+    doc.text("Teaching Information", 20, y);
+    y += 10;
+
+    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0);
+
+    // Add subjects
+    doc.text("Subjects:", 20, y);
+    y += 10;
+    if (teacher.subjects && teacher.subjects.length > 0) {
+      teacher.subjects.forEach((subject: string) => {
+        doc.text(`• ${subject}`, 30, y);
+        y += 8;
+      });
+    } else {
+      doc.text("• No subjects assigned", 30, y);
+      y += 10;
+    }
+
+    // Additional qualification information if available
+    if (teacher.qualifications) {
+      y += 5;
+      doc.setFontSize(14);
+      doc.setTextColor(0, 102, 204);
+      doc.text("Qualifications", 20, y);
+      y += 10;
+
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0);
+      doc.text(teacher.qualifications, 20, y);
+    }
+
+    // Add footer
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.text(
+      "This is an official document from Corebridge Education System",
+      105,
+      280,
+      { align: "center" }
+    );
+
+    // Save the PDF with teacher name
+    doc.save(`Teacher-${teacher.firstName}-${teacher.lastName}.pdf`);
+  };
 
   // Render a row for each teacher in the table
   const renderRow = (teacher: any) => (
@@ -192,12 +290,12 @@ const TeacherListPage = () => {
                 sizes="(max-width: 48px) 100vw, 48px"
                 priority
                 onError={(e: any) => {
-                  e.target.src = '/images/default/teacher.png';
+                  e.target.src = "/images/default/teacher.png";
                 }}
               />
             ) : (
               <Image
-                src="/images/default/teacher.png"  // Updated path
+                src="/images/default/teacher.png" // Updated path
                 alt="Default profile"
                 fill
                 className="rounded-full object-cover"
@@ -219,7 +317,7 @@ const TeacherListPage = () => {
       <td className="p-4">
         <div className="flex flex-col items-start gap-1">
           <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
-            {teacher.teacherId || 'Not assigned'}
+            {teacher.teacherId || "Not assigned"}
           </span>
           <span className="text-xs text-gray-500">Teacher ID</span>
         </div>
@@ -240,12 +338,18 @@ const TeacherListPage = () => {
       </td>
       <td className="p-4">
         <div className="flex flex-col gap-2">
-          <Link 
+          <Link
             href={`/list/teachers/${teacher._id}`}
             className="w-full px-4 py-2 text-sm text-center text-purple-600 bg-purple-50 rounded-md hover:bg-purple-100 transition-colors"
           >
             View Details
           </Link>
+          <button
+            onClick={() => generateTeacherPDF(teacher)}
+            className="w-full px-4 py-2 text-sm text-center text-green-600 bg-green-50 rounded-md hover:bg-green-100 transition-colors"
+          >
+            Download PDF
+          </button>
           <FormModal
             table="teacher"
             type="update"
@@ -258,7 +362,9 @@ const TeacherListPage = () => {
           </FormModal>
           <button
             onClick={() => {
-              if (window.confirm('Are you sure you want to delete this teacher?')) {
+              if (
+                window.confirm("Are you sure you want to delete this teacher?")
+              ) {
                 handleDelete(teacher._id);
               }
             }}
@@ -281,16 +387,20 @@ const TeacherListPage = () => {
       <div className="flex items-center justify-between">
         <h1 className="hidden md:block text-lg font-semibold">All Teachers</h1>
         <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-        <TableSearch
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              <button
-  onClick={() => setShowTeacherReport(!showTeacherReport)}
-  className="w-8 h-8 flex items-center justify-center rounded-full bg-cbYellow text-xs"
->
-  {showTeacherReport ? <HiMiniXCircle size={18} /> : <HiDocumentArrowDown size={18} />}
-</button>
+          <TableSearch
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <button
+            onClick={() => setShowTeacherReport(!showTeacherReport)}
+            className="w-8 h-8 flex items-center justify-center rounded-full bg-cbYellow text-xs"
+          >
+            {showTeacherReport ? (
+              <HiMiniXCircle size={18} />
+            ) : (
+              <HiDocumentArrowDown size={18} />
+            )}
+          </button>
 
           <div className="flex items-center gap-4 self-end">
             <button className="w-8 h-8 flex items-center justify-center rounded-full bg-cbYellow">
@@ -300,7 +410,11 @@ const TeacherListPage = () => {
               <Image src="/sort.png" alt="Sort" width={14} height={14} />
             </button>
             {/* Button to create a new teacher */}
-            <FormModal table="teacher" type="create" onSuccess={fetchTeachers} />
+            <FormModal
+              table="teacher"
+              type="create"
+              onSuccess={fetchTeachers}
+            />
           </div>
         </div>
       </div>
