@@ -3,44 +3,91 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const path = require("path");
 const fs = require("fs");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
 require("dotenv").config();
 
 const app = express();
 
-// Middleware
+// Security middleware
+app.use(helmet()); // Adds security headers
+
+// Rate limiting to prevent brute force attacks
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: { status: "error", message: "Too many requests, please try again later" }
+});
+
+// Apply rate limiting to all routes
+app.use(apiLimiter);
+
+// Standard middleware
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use(express.json({ limit: '10mb' })); // Limit JSON body size
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Create all required upload directories
+const createUploadDirs = () => {
+  const dirs = [
+    path.join(__dirname, 'uploads'),
+    path.join(__dirname, 'uploads/submissions'),
+    path.join(__dirname, 'uploads/assignments'),
+    path.join(__dirname, 'uploads/profiles'),
+    path.join(__dirname, '../public/uploads/teachers')
+  ];
+  
+  dirs.forEach(dir => {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+      console.log(`Created directory: ${dir}`);
+    }
+  });
+};
 
-// Serve static files - Fix for image serving
-app.use('/public', express.static(path.join(__dirname, '../public')));
+// Create directories
+createUploadDirs();
 
-// Update static file serving configuration
-app.use('/public', express.static(path.join(__dirname, '../public')));
+// Serve static files - with proper security
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+  maxAge: '1d', // Cache for 1 day
+  setHeaders: (res, path) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+  }
+}));
 
-// Create upload directories
-const uploadDir = path.join(__dirname, '../public/uploads/teachers');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
+app.use('/public', express.static(path.join(__dirname, '../public'), {
+  maxAge: '1d',
+  setHeaders: (res, path) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+  }
+}));
 
+// Import routes
 const assignmentRoutes = require("./routes/assignmentRoutes");
 const examRoutes = require("./routes/examRoutes");
 const resultRoutes = require("./routes/resultsRoutes");
 const teacherRoutes = require("./routes/teacherRoutes");
-const meetingRoutes = require('./routes/meetingRoutes'); // Added meeting routes
+const meetingRoutes = require('./routes/meetingRoutes');
 const ticketRoutes = require('./routes/ticketRoutes');
-const authRoutes = require('./routes/auth')
 const adminRoutes = require('./routes/adminRoutes');
-const { initAdmin } = require('./controllers/authController');
 const studentRoutes = require('./routes/studentRoutes');
+const authRoutes       = require('./routes/auth');
+const { initAdmin }    = require('./controllers/authController');
 
+
+// Connect to MongoDB with improved options
 mongoose
-  .connect(process.env.MONGODB_URI)
+  .connect(process.env.MONGODB_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    serverSelectionTimeoutMS: 5000, // Timeout after 5s
+    socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
+  })
   .then(() => {
     console.log("Connected to MongoDB");
+    // Initialize admin user
+    mongoose.connection.once('open', initAdmin);
     startServer();
   })
   .catch((err) => {
@@ -48,17 +95,21 @@ mongoose
     process.exit(1);
   });
 
+// Improved server startup with better error handling
 function startServer(retries = 3) {
   const PORT = process.env.PORT || 5000;
+  
   const server = app
     .listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
+      console.log(`Server started at: ${new Date().toISOString()}`);
     })
     .on("error", (err) => {
       if (err.code === "EADDRINUSE") {
         console.log(`Port ${PORT} is busy, trying port ${PORT + 1}`);
         if (retries > 0) {
-          process.env.PORT = Number(PORT) + 1;
+          const newPort = Number(PORT) + 1;
+          process.env.PORT = newPort;
           server.close();
           startServer(retries - 1);
         } else {
@@ -70,9 +121,21 @@ function startServer(retries = 3) {
         process.exit(1);
       }
     });
+    
+  // Graceful shutdown
+  process.on('SIGTERM', () => {
+    console.log('SIGTERM received, shutting down gracefully');
+    server.close(() => {
+      console.log('Server closed');
+      mongoose.connection.close(false, () => {
+        console.log('MongoDB connection closed');
+        process.exit(0);
+      });
+    });
+  });
 }
 
-// Routes - Update the order to have auth routes first
+// Routes - Proper order with auth routes first
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/students', studentRoutes);
@@ -81,21 +144,24 @@ app.use("/api/assignments", assignmentRoutes);
 app.use("/api/exams", examRoutes);
 app.use("/api/results", resultRoutes);
 app.use('/api/tickets', ticketRoutes);
-app.use('/api/meetings', meetingRoutes); // Added meeting routes
+app.use('/api/meetings', meetingRoutes);
 
-// 404 handler (adds JSON content type)
-app.use((req, res, next) => {
-  res.status(404).setHeader('Content-Type', 'application/json');
-  res.json({ message: "Endpoint not found" });
+// 404 handler with proper content type
+app.use((req, res) => {
+  res.status(404).json({
+    status: 'error',
+    message: "Endpoint not found",
+    path: req.originalUrl
+  });
 });
 
-// Error handling middleware - add before routes
+// Error handling middleware - consolidated into one middleware
 app.use((err, req, res, next) => {
   console.error('API Error:', err);
-
+  
   // Set proper content type
   res.setHeader('Content-Type', 'application/json');
-
+  
   // Handle specific error types
   if (err.name === 'ValidationError') {
     return res.status(400).json({
@@ -103,31 +169,28 @@ app.use((err, req, res, next) => {
       message: err.message
     });
   }
-
+  
   if (err.name === 'UnauthorizedError') {
     return res.status(401).json({
       status: 'error',
-      message: 'Invalid token'
+      message: 'Authentication required'
     });
   }
-
+  
+  if (err.name === 'ForbiddenError') {
+    return res.status(403).json({
+      status: 'error',
+      message: 'Access denied'
+    });
+  }
+  
   // Default error
   res.status(err.status || 500).json({
     status: 'error',
-    message: err.message || 'Internal server error'
+    message: process.env.NODE_ENV === 'production' 
+      ? 'Internal server error' 
+      : (err.message || 'Internal server error')
   });
 });
 
-// Initialize admin user after DB connection
-mongoose.connection.once('open', () => {
-  initAdmin();
-});
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error('API Error:', err);
-  res.setHeader('Content-Type', 'application/json');
-  res.status(err.status || 500).json({
-    message: err.message || 'Internal server error'
-  });
-});
+module.exports = app;

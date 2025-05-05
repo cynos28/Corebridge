@@ -1,38 +1,24 @@
 const jwt = require('jsonwebtoken');
 
-const auth = async (req, res, next) => {
+exports.auth = (req, res, next) => {
   try {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
-    
-    if (!token) {
-      return res.status(401).json({
-        status: 'error',
-        message: 'Authentication required'
-      });
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'No authentication token provided' });
     }
 
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      req.user = {
-        userId: decoded.userId,
-        role: decoded.role,
-        email: decoded.email
-      };
-      next();
-    } catch (err) {
-      console.error('Token verification error:', err);
-      return res.status(401).json({
-        status: 'error',
-        message: 'Invalid or expired token'
-      });
-    }
-  } catch (err) {
-    console.error('Auth middleware error:', err);
-    return res.status(500).json({
-      status: 'error',
-      message: 'Authentication failed'
-    });
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    res.status(401).json({ message: 'Invalid token' });
   }
 };
 
-module.exports = auth;
+exports.authorizeTeacher = (req, res, next) => {
+  if (!req.user || req.user.role !== 'teacher') {
+    return res.status(401).json({ message: 'Unauthorized: Teacher access required' });
+  }
+  next();
+};
