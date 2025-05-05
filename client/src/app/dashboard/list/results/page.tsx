@@ -10,11 +10,10 @@ import Pagination from "@/app/component/Pagination";
 import { role } from "@/lib/data";
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
-import { HiDocumentArrowDown } from "react-icons/hi2";
+import { HiDocumentArrowDown, HiMiniDocumentText } from "react-icons/hi2";
 import { HiOutlinePencilSquare } from "react-icons/hi2";
 import { HiMiniArchiveBoxXMark } from "react-icons/hi2";
-import CustomReport from "@/app/component/CustomReport"; // Adjust path as needed
-import { HiMiniDocumentText } from "react-icons/hi2";
+import CustomReport from "@/app/component/CustomReport";
 import { HiMiniXCircle } from "react-icons/hi2";
 
 // Define the Result type
@@ -54,9 +53,13 @@ const ResultListPage = () => {
   const [editItem, setEditItem] = useState<Result | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showCustomReport, setShowCustomReport] = useState(false);
+  const [userRole, setUserRole] = useState<string>("");
 
   // Fetch results when the component mounts
   useEffect(() => {
+    // Get user role from localStorage
+    const storedRole = localStorage.getItem("user-role");
+    setUserRole(storedRole || "");
     fetchResults();
   }, []);
 
@@ -145,8 +148,6 @@ const ResultListPage = () => {
     (item.subjectName || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
- 
-
   // PDF generation for the custom report view
   const downloadCustomReportPDF = async () => {
     const input = document.getElementById("customReport");
@@ -164,6 +165,90 @@ const ResultListPage = () => {
     }
   };
 
+  // PDF generation for individual result
+  const generateResultPDF = (result: Result) => {
+    // Create a new PDF document
+    const doc = new jsPDF();
+
+    // Add title
+    doc.setFontSize(20);
+    doc.setTextColor(44, 62, 80);
+    doc.text("Student Result Details", 105, 20, { align: "center" });
+
+    // Add school header
+    doc.setFontSize(14);
+    doc.setTextColor(52, 73, 94);
+    doc.text("Corebridge Education System", 105, 30, { align: "center" });
+
+    // Add date
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    const today = new Date();
+    doc.text(`Generated on: ${today.toLocaleDateString()}`, 105, 40, {
+      align: "center",
+    });
+
+    // Add result information
+    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0);
+
+    // Start y position
+    let y = 60;
+
+    // Add result details
+    doc.text(`Subject: ${result.subjectName}`, 20, y);
+    y += 10;
+    doc.text(`Student: ${result.student}`, 20, y);
+    y += 10;
+    doc.text(`Score: ${result.score}`, 20, y);
+    y += 10;
+    doc.text(`Teacher: ${result.teacherName}`, 20, y);
+    y += 10;
+    doc.text(`Class: ${result.className}`, 20, y);
+    y += 10;
+    doc.text(`Date: ${new Date(result.dueDate).toLocaleDateString()}`, 20, y);
+    y += 10;
+
+    // Add grade assessment
+    let grade = "";
+    let gradeColor = [0, 0, 0];
+
+    if (result.score >= 90) {
+      grade = "A (Excellent)";
+      gradeColor = [46, 125, 50]; // Green
+    } else if (result.score >= 80) {
+      grade = "B (Very Good)";
+      gradeColor = [33, 150, 243]; // Blue
+    } else if (result.score >= 70) {
+      grade = "C (Good)";
+      gradeColor = [255, 152, 0]; // Orange
+    } else if (result.score >= 60) {
+      grade = "D (Satisfactory)";
+      gradeColor = [255, 193, 7]; // Amber
+    } else {
+      grade = "F (Needs Improvement)";
+      gradeColor = [244, 67, 54]; // Red
+    }
+
+    y += 10;
+    doc.setTextColor(gradeColor[0], gradeColor[1], gradeColor[2]);
+    doc.setFontSize(14);
+    doc.text(`Grade: ${grade}`, 20, y);
+
+    // Add footer
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.text(
+      "This is an official document from Corebridge Education System",
+      105,
+      280,
+      { align: "center" }
+    );
+
+    // Save the PDF
+    doc.save(`result_${result.student}_${result.subjectName}.pdf`);
+  };
+
   const renderRow = (item: Result) => (
     <tr
       key={item._id}
@@ -179,17 +264,30 @@ const ResultListPage = () => {
       </td>
       <td>
         <div className="flex items-center gap-2">
+          {(userRole === "admin" || userRole === "teacher") && (
+            <>
+              <button
+                className="w-9 h-9 flex items-center justify-center rounded-full bg-blue-400"
+                onClick={() => openEditForm(item)}
+                title="Edit Result"
+              >
+                <HiOutlinePencilSquare size={18} />
+              </button>
+              <button
+                className="w-9 h-9 flex items-center justify-center rounded-full bg-red-400"
+                onClick={() => handleDeleteResult(item._id)}
+                title="Delete Result"
+              >
+                <HiMiniArchiveBoxXMark size={18} />
+              </button>
+            </>
+          )}
           <button
-            className="w-9 h-9 flex items-center justify-center rounded-full bg-blue-400"
-            onClick={() => openEditForm(item)}
+            className="w-9 h-9 flex items-center justify-center rounded-full bg-green-500"
+            onClick={() => generateResultPDF(item)}
+            title="Download Result PDF"
           >
-            <HiOutlinePencilSquare size={18} />
-          </button>
-          <button
-            className="w-9 h-9 flex items-center justify-center rounded-full bg-red-400"
-            onClick={() => handleDeleteResult(item._id)}
-          >
-            <HiMiniArchiveBoxXMark size={18} />
+            <HiMiniDocumentText size={18} />
           </button>
         </div>
       </td>
@@ -206,12 +304,15 @@ const ResultListPage = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
           <div className="flex items-center gap-4 self-end">
-          <button
+            <button
               onClick={() => setShowCustomReport(!showCustomReport)}
               className="w-8 h-8 flex items-center justify-center rounded-full bg-cbYellow text-xs"
-
             >
-              {showCustomReport ? <HiMiniXCircle size={18}/> : <HiDocumentArrowDown size={18} />}
+              {showCustomReport ? (
+                <HiMiniXCircle size={18} />
+              ) : (
+                <HiDocumentArrowDown size={18} />
+              )}
             </button>
             <button className="w-8 h-8 flex items-center justify-center rounded-full bg-cbYellow">
               <Image src="/filter.png" alt="Filter" width={14} height={14} />
@@ -228,7 +329,6 @@ const ResultListPage = () => {
               </button>
             )}
             {/* Toggle for custom report view */}
-            
           </div>
         </div>
       </div>
@@ -247,8 +347,15 @@ const ResultListPage = () => {
           </div>
         </div>
       ) : (
-        <div id="resultSheet" className="bg-white p-4 rounded-md flex-1 m-4 mt-0">
-          <Table columns={columns} renderRow={renderRow} data={filteredResults} />
+        <div
+          id="resultSheet"
+          className="bg-white p-4 rounded-md flex-1 m-4 mt-0"
+        >
+          <Table
+            columns={columns}
+            renderRow={renderRow}
+            data={filteredResults}
+          />
         </div>
       )}
 
