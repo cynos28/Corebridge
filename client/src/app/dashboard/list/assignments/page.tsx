@@ -18,8 +18,6 @@ import { GrDownload } from "react-icons/gr";
 import CustomAssignmentReport from "@/app/component/CustomAssigmentReport"; // Adjust path if needed
 import { HiMiniXCircle } from "react-icons/hi2"; // For toggle close
 
-
-
 type Assignment = {
   _id: string;
   subjectName: string;
@@ -68,7 +66,12 @@ const AssignmentListPage = () => {
 
   const fetchAssignments = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/assignments");
+      const token = localStorage.getItem("user-token");
+      const res = await fetch("http://localhost:5000/api/assignments", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       if (!res.ok) throw new Error("Failed to fetch assignments");
       const data: Assignment[] = await res.json();
       setAssignments(data);
@@ -79,8 +82,12 @@ const AssignmentListPage = () => {
 
   const handleCreateAssignment = async (formData: FormData) => {
     try {
+      const token = localStorage.getItem("user-token");
       const res = await fetch("http://localhost:5000/api/assignments", {
         method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
         body: formData,
       });
       if (!res.ok) throw new Error("Failed to create assignment");
@@ -93,8 +100,12 @@ const AssignmentListPage = () => {
 
   const handleUpdateAssignment = async (id: string, formData: FormData) => {
     try {
+      const token = localStorage.getItem("user-token");
       const res = await fetch(`http://localhost:5000/api/assignments/${id}`, {
         method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
         body: formData,
       });
       if (!res.ok) throw new Error("Failed to update assignment");
@@ -116,8 +127,12 @@ const AssignmentListPage = () => {
     }
 
     try {
+      const token = localStorage.getItem("user-token");
       const res = await fetch(`http://localhost:5000/api/assignments/${id}`, {
         method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
       if (!res.ok) throw new Error("Failed to delete assignment");
       await res.json();
@@ -259,22 +274,21 @@ const AssignmentListPage = () => {
   const downloadCustomAssignmentReportPDF = async () => {
     const input = document.getElementById("customAssignmentReport");
     if (!input) return;
-  
+
     try {
       const canvas = await html2canvas(input);
       const imgData = canvas.toDataURL("image/png");
-  
+
       const pdf = new jsPDF();
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-  
+
       pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-      pdf.save("custom-assignment-report.pdf");
+      pdf.save("corebrige-assignment-report.pdf");
     } catch (error) {
       console.error("Error generating PDF:", error);
     }
   };
-  
 
   const renderRow = (item: Assignment) => (
     <tr
@@ -289,7 +303,7 @@ const AssignmentListPage = () => {
       </td>
       <td>
         <div className="flex items-center gap-2">
-          {role === "teacher" && (
+          {(role === "teacher" || role === "admin") && (
             <>
               <button
                 className="w-9 h-9 flex items-center justify-center rounded-full bg-blue-400"
@@ -394,8 +408,19 @@ const AssignmentListPage = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
           <div className="flex items-center gap-4 self-end">
-          <button onClick={() => setShowCustomAssignmentReport(!showCustomAssignmentReport)} className="w-8 h-8 flex items-center justify-center rounded-full bg-cbYellow text-xs">{showCustomAssignmentReport ? <HiMiniXCircle size={18} /> : <HiDocumentArrowDown size={18} />}</button>
-            
+            <button
+              onClick={() =>
+                setShowCustomAssignmentReport(!showCustomAssignmentReport)
+              }
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-cbYellow text-xs"
+            >
+              {showCustomAssignmentReport ? (
+                <HiMiniXCircle size={18} />
+              ) : (
+                <HiDocumentArrowDown size={18} />
+              )}
+            </button>
+
             <button className="w-8 h-8 flex items-center justify-center rounded-full bg-cbYellow">
               <Image src="/filter.png" alt="Filter" width={14} height={14} />
             </button>
@@ -419,19 +444,32 @@ const AssignmentListPage = () => {
         <div>
           <CustomAssignmentReport data={filteredAssignments} />
           <div className="flex justify-center gap-4 mt-4">
-            <button onClick={downloadCustomAssignmentReportPDF} className="px-4 py-2 bg-[#E9A5F1] text-white rounded-md hover:bg-[#C68EFD]">Download PDF</button>
+            <button
+              onClick={downloadCustomAssignmentReportPDF}
+              className="px-4 py-2 bg-[#E9A5F1] text-white rounded-md hover:bg-[#C68EFD]"
+            >
+              Download PDF
+            </button>
           </div>
         </div>
       ) : (
         <div className="bg-white p-4 rounded-md flex-1 m-4 mt-0">
-          <Table columns={columns} renderRow={renderRow} data={filteredAssignments} />
+          <Table
+            columns={columns}
+            renderRow={renderRow}
+            data={filteredAssignments}
+          />
         </div>
       )}
 
       <Pagination />
 
       {isFormOpen && (
-        <AssignmentForm onClose={() => setIsFormOpen(false)} onSubmit={handleFormSubmit} editData={isEditMode ? editItem : null} />
+        <AssignmentForm
+          onClose={() => setIsFormOpen(false)}
+          onSubmit={handleFormSubmit}
+          editData={isEditMode ? editItem : null}
+        />
       )}
 
       <Toaster position="top-center" />
