@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { FaPlus, FaDownload } from "react-icons/fa";
 import { Toaster, toast } from "react-hot-toast";
+import path from "path";
 
 import Table from "@/app/component/Table";
 import ResultTableSearch from "@/app/component/ResultTableSearch";
@@ -15,8 +16,8 @@ import { HiDocumentArrowDown } from "react-icons/hi2";
 import { HiOutlinePencilSquare } from "react-icons/hi2";
 import { HiMiniArchiveBoxXMark } from "react-icons/hi2";
 import { GrDownload } from "react-icons/gr";
-import CustomAssignmentReport from "@/app/component/CustomAssigmentReport"; // Adjust path if needed
-import { HiMiniXCircle } from "react-icons/hi2"; // For toggle close
+import CustomAssignmentReport from "@/app/component/CustomAssigmentReport";
+import { HiMiniXCircle } from "react-icons/hi2";
 
 type Assignment = {
   _id: string;
@@ -56,6 +57,8 @@ const AssignmentListPage = () => {
   const [role, setRole] = useState<string>("");
   const [showCustomAssignmentReport, setShowCustomAssignmentReport] =
     useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
 
   useEffect(() => {
     // Get role from localStorage when component mounts
@@ -66,41 +69,64 @@ const AssignmentListPage = () => {
 
   const fetchAssignments = async () => {
     try {
-      const token = localStorage.getItem("user-token");
+      const token = localStorage.getItem("token"); // Changed from "user-token"
+      const loadingToast = toast.loading("Fetching assignments...");
+      
       const res = await fetch("http://localhost:5000/api/assignments", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
+      
+      toast.dismiss(loadingToast);
+      
       if (!res.ok) throw new Error("Failed to fetch assignments");
       const data: Assignment[] = await res.json();
       setAssignments(data);
     } catch (error) {
       console.error("Error fetching assignments:", error);
+      toast.error("Failed to load assignments");
     }
   };
 
   const handleCreateAssignment = async (formData: FormData) => {
     try {
-      const token = localStorage.getItem("user-token");
+      const token = localStorage.getItem("token"); // Changed from "user-token"
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+
+      const loadingToast = toast.loading("Creating assignment...");
       const res = await fetch("http://localhost:5000/api/assignments", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${token}`
+          // Note: Don't set Content-Type when sending FormData
         },
         body: formData,
       });
-      if (!res.ok) throw new Error("Failed to create assignment");
+      
+      toast.dismiss(loadingToast);
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Failed to create assignment");
+      }
+      
       const newAssignment = await res.json();
       setAssignments((prev) => [...prev, newAssignment]);
-    } catch (error) {
+      toast.success("Assignment created successfully!");
+    } catch (error: any) {
       console.error("Error creating assignment:", error);
+      toast.error(error.message || "Failed to create assignment");
     }
   };
 
   const handleUpdateAssignment = async (id: string, formData: FormData) => {
     try {
-      const token = localStorage.getItem("user-token");
+      const token = localStorage.getItem("token"); // Changed from "user-token"
+      const loadingToast = toast.loading("Updating assignment...");
+      
       const res = await fetch(`http://localhost:5000/api/assignments/${id}`, {
         method: "PUT",
         headers: {
@@ -108,37 +134,57 @@ const AssignmentListPage = () => {
         },
         body: formData,
       });
-      if (!res.ok) throw new Error("Failed to update assignment");
+      
+      toast.dismiss(loadingToast);
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Failed to update assignment");
+      }
+      
       const updated = await res.json();
       setAssignments((prev) =>
         prev.map((item) => (item._id === id ? updated : item))
       );
-    } catch (error) {
+      toast.success("Assignment updated successfully!");
+    } catch (error: any) {
       console.error("Error updating assignment:", error);
+      toast.error(error.message || "Failed to update assignment");
     }
   };
 
   const handleDeleteAssignment = async (id: string) => {
     const confirmDelete = window.confirm(
-      "Are you sure you want to delete this result?"
+      "Are you sure you want to delete this assignment?"
     );
     if (!confirmDelete) {
       return;
     }
 
     try {
-      const token = localStorage.getItem("user-token");
+      const token = localStorage.getItem("token"); // Changed from "user-token"
+      const loadingToast = toast.loading("Deleting assignment...");
+      
       const res = await fetch(`http://localhost:5000/api/assignments/${id}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
-      if (!res.ok) throw new Error("Failed to delete assignment");
+      
+      toast.dismiss(loadingToast);
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Failed to delete assignment");
+      }
+      
       await res.json();
       setAssignments((prev) => prev.filter((item) => item._id !== id));
-    } catch (error) {
+      toast.success("Assignment deleted successfully!");
+    } catch (error: any) {
       console.error("Error deleting assignment:", error);
+      toast.error(error.message || "Failed to delete assignment");
     }
   };
 
@@ -169,12 +215,16 @@ const AssignmentListPage = () => {
       formData.append("submission", file);
       formData.append("studentId", localStorage.getItem("user-id") || "");
 
+      const token = localStorage.getItem("token"); // Changed from "user-token"
       const loadingToast = toast.loading("Uploading assignment...");
 
       const response = await fetch(
         `http://localhost:5000/api/assignments/${id}/submit`,
         {
           method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
           body: formData,
         }
       );
@@ -204,12 +254,20 @@ const AssignmentListPage = () => {
         return;
       }
 
+      const token = localStorage.getItem("token"); // Changed from "user-token"
+      const loadingToast = toast.loading("Downloading document...");
+
       const response = await fetch(
-        `http://localhost:5000/uploads/${filename}`,
+        `http://localhost:5000/api/assignments/${id}/download`,
         {
           method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
       );
+
+      toast.dismiss(loadingToast);
 
       if (!response.ok) {
         throw new Error("Download failed");
@@ -224,7 +282,6 @@ const AssignmentListPage = () => {
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
-
       toast.success("Document downloaded successfully!");
     } catch (error: any) {
       console.error("Download error:", error);
@@ -239,12 +296,20 @@ const AssignmentListPage = () => {
         return;
       }
 
+      const token = localStorage.getItem("token"); // Changed from "user-token"
+      const loadingToast = toast.loading("Downloading submission...");
+
       const response = await fetch(
         `http://localhost:5000/api/assignments/${id}/submission/download`,
         {
           method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
       );
+
+      toast.dismiss(loadingToast);
 
       if (!response.ok) {
         throw new Error("Download failed");
@@ -259,7 +324,6 @@ const AssignmentListPage = () => {
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
-
       toast.success("Student submission downloaded successfully!");
     } catch (error: any) {
       console.error("Download error:", error);
@@ -271,11 +335,18 @@ const AssignmentListPage = () => {
     item.subjectName.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Pagination logic
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredAssignments.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredAssignments.length / itemsPerPage);
+
   const downloadCustomAssignmentReportPDF = async () => {
     const input = document.getElementById("customAssignmentReport");
     if (!input) return;
 
     try {
+      const loadingToast = toast.loading("Generating PDF...");
       const canvas = await html2canvas(input);
       const imgData = canvas.toDataURL("image/png");
 
@@ -284,9 +355,12 @@ const AssignmentListPage = () => {
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
       pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-      pdf.save("corebrige-assignment-report.pdf");
+      pdf.save("assignment-report.pdf");
+      toast.dismiss(loadingToast);
+      toast.success("PDF downloaded successfully!");
     } catch (error) {
       console.error("Error generating PDF:", error);
+      toast.error("Failed to generate PDF");
     }
   };
 
@@ -320,7 +394,7 @@ const AssignmentListPage = () => {
                 <HiMiniArchiveBoxXMark size={18} />
               </button>
               <button
-                className="w-9 h-9 flex items-center justify-center rounded-full bg-red-400"
+                className="w-9 h-9 flex items-center justify-center rounded-full bg-green-400"
                 onClick={() =>
                   handleDownloadTeacherDocument(item._id, item.document || "")
                 }
@@ -330,7 +404,7 @@ const AssignmentListPage = () => {
               </button>
               {item.studentSubmission && (
                 <button
-                  className="w-9 h-9 flex items-center justify-center rounded-full bg-green-400"
+                  className="w-9 h-9 flex items-center justify-center rounded-full bg-purple-400"
                   onClick={() =>
                     handleDownloadSubmission(
                       item._id,
@@ -398,7 +472,7 @@ const AssignmentListPage = () => {
 
   return (
     <div className="bg-white p-4 rounded-md flex-1 m-4 mt-0">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-4">
         <h1 className="hidden md:block text-lg font-semibold">
           All Assignments
         </h1>
@@ -413,6 +487,7 @@ const AssignmentListPage = () => {
                 setShowCustomAssignmentReport(!showCustomAssignmentReport)
               }
               className="w-8 h-8 flex items-center justify-center rounded-full bg-cbYellow text-xs"
+              title={showCustomAssignmentReport ? "Close Report" : "Show Report"}
             >
               {showCustomAssignmentReport ? (
                 <HiMiniXCircle size={18} />
@@ -431,6 +506,7 @@ const AssignmentListPage = () => {
               <button
                 onClick={openCreateForm}
                 className="w-8 h-8 flex items-center justify-center rounded-full bg-cbYellow"
+                title="Create Assignment"
               >
                 <FaPlus size={14} />
               </button>
@@ -453,16 +529,20 @@ const AssignmentListPage = () => {
           </div>
         </div>
       ) : (
-        <div className="bg-white p-4 rounded-md flex-1 m-4 mt-0">
+        <div className="bg-white rounded-md flex-1">
           <Table
             columns={columns}
             renderRow={renderRow}
-            data={filteredAssignments}
+            data={currentItems}
+          />
+          
+          <Pagination 
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
           />
         </div>
       )}
-
-      <Pagination />
 
       {isFormOpen && (
         <AssignmentForm
