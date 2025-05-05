@@ -52,16 +52,16 @@ const TeacherListPage = () => {
   // Fetch teachers from the backend API
   const fetchTeachers = async () => {
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem('token');
       const res = await fetch("http://localhost:5000/api/teachers", {
         headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
 
       if (res.status === 401) {
-        localStorage.removeItem("token");
+        localStorage.removeItem('token');
         // You may want to redirect to login page here
         return;
       }
@@ -80,42 +80,42 @@ const TeacherListPage = () => {
 
   const handleDelete = async (id: string) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem('token');
       const response = await fetch(`http://localhost:5000/api/teachers/${id}`, {
-        method: "DELETE",
+        method: 'DELETE',
         headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
 
       if (response.status === 401) {
-        localStorage.removeItem("token");
+        localStorage.removeItem('token');
         // You may want to redirect to login page here
         return;
       }
 
       if (!response.ok) {
-        throw new Error("Failed to delete teacher");
+        throw new Error('Failed to delete teacher');
       }
 
       await fetchTeachers(); // Refresh the list
     } catch (error) {
-      console.error("Error deleting teacher:", error);
+      console.error('Error deleting teacher:', error);
     }
   };
 
   const handleUpdate = async (id: string, updatedData: any) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem('token');
       const formData = new FormData();
-
+      
       // Add all fields from updatedData to formData
       Object.entries(updatedData).forEach(([key, value]) => {
-        if (key === "subjects" && Array.isArray(value)) {
+        if (key === 'subjects' && Array.isArray(value)) {
           // Handle subjects array specially
           value.forEach((subject: string) => {
-            formData.append("subjects[]", subject);
+            formData.append('subjects[]', subject);
           });
         } else if (value !== null && value !== undefined) {
           formData.append(key, value as string);
@@ -125,22 +125,22 @@ const TeacherListPage = () => {
       const response = await fetch(`http://localhost:5000/api/teachers/${id}`, {
         method: "PUT",
         headers: {
-          Authorization: `Bearer ${token}`,
+          'Authorization': `Bearer ${token}`,
           // Remove Content-Type header to let browser set it with boundary for FormData
         },
         body: formData,
       });
 
       if (response.status === 401) {
-        localStorage.removeItem("token");
+        localStorage.removeItem('token');
         // You may want to redirect to login page here
         return;
       }
-
+  
       if (!response.ok) {
         throw new Error("Failed to update teacher");
       }
-
+  
       await fetchTeachers(); // Refresh the list
     } catch (error) {
       console.error("Error updating teacher:", error);
@@ -151,11 +151,10 @@ const TeacherListPage = () => {
     fetchTeachers();
   }, []);
 
-  const filteredStudent = teachers.filter(
-    (item) =>
-      item.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.phone?.toString().includes(searchTerm.toLowerCase())
+  const filteredStudent = teachers.filter((item) =>
+    item.firstName.toLowerCase().includes(searchTerm.toLowerCase())
+    || item.lastName.toLowerCase().includes(searchTerm.toLowerCase())
+    || item.phone?.toString().includes(searchTerm.toLowerCase())
   );
 
   const downloadTeacherReportPDF = async () => {
@@ -193,12 +192,12 @@ const TeacherListPage = () => {
                 sizes="(max-width: 48px) 100vw, 48px"
                 priority
                 onError={(e: any) => {
-                  e.target.src = "/images/default/teacher.png";
+                  e.target.src = '/images/default/teacher.png';
                 }}
               />
             ) : (
               <Image
-                src="/images/default/teacher.png" // Updated path
+                src="/images/default/teacher.png"  // Updated path
                 alt="Default profile"
                 fill
                 className="rounded-full object-cover"
@@ -220,7 +219,7 @@ const TeacherListPage = () => {
       <td className="p-4">
         <div className="flex flex-col items-start gap-1">
           <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
-            {teacher.teacherId || "Not assigned"}
+            {teacher.teacherId || 'Not assigned'}
           </span>
           <span className="text-xs text-gray-500">Teacher ID</span>
         </div>
@@ -241,18 +240,12 @@ const TeacherListPage = () => {
       </td>
       <td className="p-4">
         <div className="flex flex-col gap-2">
-          <Link
+          <Link 
             href={`/list/teachers/${teacher._id}`}
             className="w-full px-4 py-2 text-sm text-center text-purple-600 bg-purple-50 rounded-md hover:bg-purple-100 transition-colors"
           >
             View Details
           </Link>
-          <button
-            onClick={() => generateTeacherPDF(teacher)}
-            className="w-full px-4 py-2 text-sm text-center text-green-600 bg-green-50 rounded-md hover:bg-green-100 transition-colors"
-          >
-            Download PDF
-          </button>
           <FormModal
             table="teacher"
             type="update"
@@ -265,9 +258,7 @@ const TeacherListPage = () => {
           </FormModal>
           <button
             onClick={() => {
-              if (
-                window.confirm("Are you sure you want to delete this teacher?")
-              ) {
+              if (window.confirm('Are you sure you want to delete this teacher?')) {
                 handleDelete(teacher._id);
               }
             }}
@@ -309,11 +300,7 @@ const TeacherListPage = () => {
               <Image src="/sort.png" alt="Sort" width={14} height={14} />
             </button>
             {/* Button to create a new teacher */}
-            <FormModal
-              table="teacher"
-              type="create"
-              onSuccess={fetchTeachers}
-            />
+            <FormModal table="teacher" type="create" onSuccess={fetchTeachers} />
           </div>
         </div>
       </div>
