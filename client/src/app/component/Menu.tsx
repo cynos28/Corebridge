@@ -98,7 +98,7 @@ const menuItems = [
         icon: '/tickets.png',
         label: 'Tickets',
         href: '/list/tickets',
-        visible: ['admin', 'student'],
+        visible: ['admin', 'student','teacher'],
       },
     ],
   },
