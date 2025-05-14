@@ -13,6 +13,7 @@ import { HiDocumentArrowDown } from "react-icons/hi2";
 import { HiOutlinePencilSquare } from "react-icons/hi2";
 import { HiMiniArchiveBoxXMark } from "react-icons/hi2";
 
+
 import { examsData, role } from "@/lib/data"; // If you have static sample data; otherwise, fetch from your server
 
 type Exam = {
@@ -102,32 +103,24 @@ const ExamListPage = () => {
     }
   };
 
+  
+
   const handleDownloadExam = async (exam: Exam) => {
     try {
-      // Create exam details content
-      const content = `
-        Exam Details
-        ============
-        Subject: ${exam.subject}
-        Class: ${exam.class}
-        Teacher: ${exam.teacher}
-        Date: ${new Date(exam.date).toLocaleDateString()}
-      `;
-
-      // Create blob and download
-      const blob = new Blob([content], { type: 'text/plain' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `exam-${exam.subject}.txt`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
+      const doc = new jsPDF();
+      doc.setFontSize(16);
+      doc.text("Exam Details", 10, 10);
+      doc.setFontSize(12);
+      doc.text(`Subject: ${exam.subject}`, 10, 20);
+      doc.text(`Class: ${exam.class}`, 10, 30);
+      doc.text(`Teacher: ${exam.teacher}`, 10, 40);
+      doc.text(`Date: ${new Date(exam.date).toLocaleDateString()}`, 10, 50);
+      doc.save(`exam-${exam.subject}.pdf`);
     } catch (error) {
-      console.error('Error downloading exam:', error);
+      console.error("Error downloading PDF:", error);
     }
   };
+
 
   const openCreateForm = () => {
     setIsEditMode(false);

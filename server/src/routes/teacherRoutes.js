@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const auth = require('../middleware/auth');
+const { auth } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 const {
   getTeachers,
@@ -10,9 +10,11 @@ const {
   deleteTeacher
 } = require('../controllers/teacherController');
 
-// Define routes with auth and upload middleware
+// Public (authenticated) routes
 router.get('/', auth, getTeachers);
 router.get('/:id', auth, getTeacher);
+
+// Protected CRUD with photo upload
 router.post('/', auth, upload.single('photo'), createTeacher);
 router.put('/:id', auth, upload.single('photo'), updateTeacher);
 router.delete('/:id', auth, deleteTeacher);
