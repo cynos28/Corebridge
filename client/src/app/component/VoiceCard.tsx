@@ -445,7 +445,7 @@ export default function VoiceCard() {
       let timeResponse;
       do {
         timeResponse = await askVoiceQuestion(
-          'What is the start time? For example, say 0200 for 2:00 AM.'
+          'What is the start time?'
         );
         timeResponse = processTimeInput(timeResponse);
       } while (!isValidTime(timeResponse));
@@ -453,7 +453,7 @@ export default function VoiceCard() {
 
       do {
         timeResponse = await askVoiceQuestion(
-          'What is the end time? For example, say 0330 for 3:30 AM.'
+          'What is the end time? '
         );
         timeResponse = processTimeInput(timeResponse);
       } while (!isValidTime(timeResponse));
