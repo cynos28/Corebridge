@@ -24,6 +24,8 @@ const Navbar = () => {
           url += '/admin/profile';
         } else if (role === 'teacher') {
           url += `/teachers/${id}`;
+        } else if (role === 'student') {
+          url += `/students/${id}`;
         }
 
         const response = await fetch(url, {
@@ -35,16 +37,22 @@ const Navbar = () => {
         
         if (response.ok) {
           const data = await response.json();
+          
           // Format display name based on role
-          const displayName = role === 'teacher' ? 
-            `${data.firstName} ${data.lastName}` : 
-            data.name;
+          const displayName = role === 'admin' ? 
+            data.name : 
+            `${data.firstName} ${data.lastName}`;
+          
+          // Handle photo URL
+          const photoUrl = data.photoUrl ? 
+            `http://localhost:5000${data.photoUrl}` : 
+            '/images/default/avatar.png';
           
           setUser({
             ...data,
             displayName,
             role: role.charAt(0).toUpperCase() + role.slice(1),
-            photoUrl: data.photoUrl ? `http://localhost:5000${data.photoUrl}` : '/avatar.png'
+            photoUrl
           });
         } else if (response.status === 401) {
           localStorage.removeItem('token');
@@ -76,7 +84,7 @@ const Navbar = () => {
       case 'teacher':
         return `/profile/teacher/${id}`;
       case 'student':
-        return `/profile/student/${id}`; // Updated path
+        return `/profile/student/${id}`;
       default:
         return '/';
     }

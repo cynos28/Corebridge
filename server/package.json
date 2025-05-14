@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "main": "src/index.js",
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "nodemon src/index.js"
+    "start": "node init && node src/index.js",
+    "dev": "node init && nodemon src/index.js"
   },
   "keywords": [],
   "author": "",
@@ -12,6 +12,7 @@
   "dependencies": {
     "axios": "^1.8.4",
     "bcryptjs": "^3.0.2",
+    "compression": "^1.8.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "exceljs": "^4.3.0",
