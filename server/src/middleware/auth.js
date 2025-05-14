@@ -1,46 +1,24 @@
 const jwt = require('jsonwebtoken');
 
-const auth = (req, res, next) => {
+exports.auth = (req, res, next) => {
   try {
-    // Check if Authorization header exists
-    const authHeader = req.header('Authorization');
-    if (!authHeader) {
-      return res.status(401).json({ 
-        status: 'error',
-        message: 'No auth token, authorization denied' 
-      });
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'No authentication token provided' });
     }
 
-    // Extract token
-    const token = authHeader.replace('Bearer ', '');
-    if (!token) {
-      return res.status(401).json({
-        status: 'error',
-        message: 'Authorization token is required'
-      });
-    }
-
-    try {
-      // Verify token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      
-      // Add user info to request
-      req.user = decoded;
-      next();
-    } catch (jwtError) {
-      return res.status(401).json({
-        status: 'error',
-        message: 'Invalid or expired token'
-      });
-    }
-
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
   } catch (error) {
-    console.error('Auth middleware error:', error);
-    res.status(500).json({ 
-      status: 'error',
-      message: 'Internal server error during authentication'
-    });
+    res.status(401).json({ message: 'Invalid token' });
   }
 };
 
-module.exports = auth;
+exports.authorizeTeacher = (req, res, next) => {
+  if (!req.user || req.user.role !== 'teacher') {
+    return res.status(401).json({ message: 'Unauthorized: Teacher access required' });
+  }
+  next();
+};
