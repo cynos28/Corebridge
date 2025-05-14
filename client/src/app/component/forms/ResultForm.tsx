@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 
 interface ResultFormProps {
   onClose: () => void;
@@ -30,6 +29,14 @@ const ResultForm: React.FC<ResultFormProps> = ({ onClose, onSubmit, editData }) 
   const [className, setClassName] = useState("");
   const [dueDate, setDueDate] = useState(today);
 
+  // error states
+  const [subjError, setSubjError] = useState("");
+  const [studError, setStudError] = useState("");
+  const [scoreError, setScoreError] = useState("");
+  const [teachError, setTeachError] = useState("");
+  const [classError, setClassError] = useState("");
+  const [dateError, setDateError] = useState("");
+
   useEffect(() => {
     if (editData) {
       setSubjectName(editData.subjectName);
@@ -37,13 +44,71 @@ const ResultForm: React.FC<ResultFormProps> = ({ onClose, onSubmit, editData }) 
       setScore(editData.score.toString());
       setTeacherName(editData.teacherName);
       setClassName(editData.className);
-      // Convert the exam date to YYYY-MM-DD format
       setDueDate(new Date(editData.dueDate).toISOString().split("T")[0]);
     }
   }, [editData]);
 
+  const validateSubject = (value: string) => {
+    if (!/^[A-Za-z\s]+$/.test(value)) {
+      setSubjError("Subject must contain only letters and spaces");
+    } else {
+      setSubjError("");
+    }
+  };
+
+  const validateStudent = (value: string) => {
+    if (!/^[A-Za-z\s]+$/.test(value)) {
+      setStudError("Student name must contain only letters and spaces");
+    } else {
+      setStudError("");
+    }
+  };
+
+  const validateScore = (value: string) => {
+    const num = Number(value);
+    if (!/^[0-9]+$/.test(value) || num < 0 || num > 100) {
+      setScoreError("Score must be a number between 0 and 100");
+    } else {
+      setScoreError("");
+    }
+  };
+
+  const validateTeacher = (value: string) => {
+    if (!/^[A-Za-z\s]+$/.test(value)) {
+      setTeachError("Teacher name must contain only letters and spaces");
+    } else {
+      setTeachError("");
+    }
+  };
+
+  const validateClass = (value: string) => {
+    if (!/^(?:[1-9]|1[0-3])-[A-Za-z]+$/.test(value)) {
+      setClassError("Class must be in format 10-A with grade 1–13");
+    } else {
+      setClassError("");
+    }
+  };
+
+  const validateDate = (value: string) => {
+    if (value < today) {
+      setDateError("Date cannot be in the past");
+    } else {
+      setDateError("");
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // final check
+    validateSubject(subjectName);
+    validateStudent(studentName);
+    validateScore(score);
+    validateTeacher(teacherName);
+    validateClass(className);
+    validateDate(dueDate);
+
+    if (subjError || studError || scoreError || teachError || classError || dateError) return;
+
     const formData = new FormData();
     formData.append("subjectName", subjectName);
     formData.append("student", studentName);
@@ -68,10 +133,11 @@ const ResultForm: React.FC<ResultFormProps> = ({ onClose, onSubmit, editData }) 
                 id="subjectName"
                 type="text"
                 value={subjectName}
-                onChange={(e) => setSubjectName(e.target.value)}
+                onChange={e => { setSubjectName(e.target.value); validateSubject(e.target.value); }}
                 placeholder="e.g., Mathematics"
                 required
               />
+              {subjError && <p className="text-red-500 text-sm">{subjError}</p>}
             </div>
             <div>
               <Label htmlFor="student">Student</Label>
@@ -79,23 +145,28 @@ const ResultForm: React.FC<ResultFormProps> = ({ onClose, onSubmit, editData }) 
                 id="student"
                 type="text"
                 value={studentName}
-                onChange={(e) => setStudentName(e.target.value)}
+                onChange={e => { setStudentName(e.target.value); validateStudent(e.target.value); }}
                 placeholder="e.g., John Doe"
                 required
               />
+              {studError && <p className="text-red-500 text-sm">{studError}</p>}
             </div>
           </div>
+
           <div className="grid gap-5 md:grid-cols-2">
             <div>
               <Label htmlFor="score">Score</Label>
               <Input
                 id="score"
                 type="number"
+                min={0}
+                max={100}
                 value={score}
-                onChange={(e) => setScore(e.target.value)}
+                onChange={e => { setScore(e.target.value); validateScore(e.target.value); }}
                 placeholder="e.g., 90"
                 required
               />
+              {scoreError && <p className="text-red-500 text-sm">{scoreError}</p>}
             </div>
             <div>
               <Label htmlFor="className">Class</Label>
@@ -103,39 +174,50 @@ const ResultForm: React.FC<ResultFormProps> = ({ onClose, onSubmit, editData }) 
                 id="className"
                 type="text"
                 value={className}
-                onChange={(e) => setClassName(e.target.value)}
-                placeholder="e.g., 10A"
+                onChange={e => { setClassName(e.target.value); validateClass(e.target.value); }}
+                placeholder="e.g., 10-A"
                 required
               />
+              {classError && <p className="text-red-500 text-sm">{classError}</p>}
             </div>
           </div>
+
           <div>
             <Label htmlFor="teacherName">Teacher</Label>
             <Input
               id="teacherName"
               type="text"
               value={teacherName}
-              onChange={(e) => setTeacherName(e.target.value)}
+              onChange={e => { setTeacherName(e.target.value); validateTeacher(e.target.value); }}
               placeholder="e.g., Mr. Smith"
               required
             />
+            {teachError && <p className="text-red-500 text-sm">{teachError}</p>}
           </div>
+
           <div>
             <Label htmlFor="dueDate">Due Date</Label>
             <Input
               id="dueDate"
               type="date"
               value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
+              onChange={e => { setDueDate(e.target.value); validateDate(e.target.value); }}
               min={today}
               required
             />
+            {dateError && <p className="text-red-500 text-sm">{dateError}</p>}
           </div>
+
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
             <Button variant="outline" type="button" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit">
+            <Button
+              type="submit"
+              disabled={
+                !!subjError || !!studError || !!scoreError || !!teachError || !!classError || !!dateError
+              }
+            >
               {editData ? "Update Result" : "Submit Result"}
             </Button>
           </div>
