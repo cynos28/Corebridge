@@ -1,4 +1,5 @@
 'use client';
+
 import React, { useEffect, useState } from 'react';
 
 interface AssignmentFormProps {
@@ -84,20 +85,19 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ onClose, onSubmit, edit
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
 
+      // Fixed the conflicting file type validation
       const allowed = [
         'application/pdf',
         'application/msword',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
       ];
+      
       if (!allowed.includes(file.type)) {
         setFileError('Please upload only PDF or Word documents');
-
-      if (file.type !== 'application/pdf') {
-        setFileError('Please upload only PDF documents');
-
         setDocumentFile(null);
         return;
       }
+      
       setFileError('');
       setDocumentFile(file);
     }
@@ -155,12 +155,12 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ onClose, onSubmit, edit
             <label className="block text-sm font-medium text-gray-700 mb-1">Teacher</label>
             <input
               type="text"
-                value={teacherName}
-                onChange={handleTeacherChange}
-                required
-                placeholder="e.g., Mr. Smith"
-                className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
-              />
+              value={teacherName}
+              onChange={handleTeacherChange}
+              required
+              placeholder="e.g., Mr. Smith"
+              className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
             {teacherError && <p className="text-red-500 text-sm mt-1">{teacherError}</p>}
           </div>
           <div>
@@ -178,13 +178,11 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ onClose, onSubmit, edit
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Upload Document</label>
             <div className="relative">
-
               <input
                 type="file"
                 onChange={handleFileChange}
                 accept=".pdf,.doc,.docx"
                 className="w-full file:py-2 file:px-4 file:rounded file:border-0 file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
-
               />
               {fileError && <p className="text-red-500 text-sm mt-1">{fileError}</p>}
               {documentFile && !fileError && (
