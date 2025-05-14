@@ -18,6 +18,8 @@ import { HiMiniArchiveBoxXMark } from "react-icons/hi2";
 import { GrDownload } from "react-icons/gr";
 import CustomAssignmentReport from "@/app/component/CustomAssigmentReport";
 import { HiMiniXCircle } from "react-icons/hi2";
+import Swal from 'sweetalert2'
+
 
 type Assignment = {
   _id: string;
@@ -154,39 +156,52 @@ const AssignmentListPage = () => {
   };
 
   const handleDeleteAssignment = async (id: string) => {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this assignment?"
-    );
-    if (!confirmDelete) {
-      return;
-    }
+  // 1) Ask for confirmation
+  const result = await Swal.fire({
+    title: 'Are you sure?',
+    text: 'This assignment will be permanently deleted!',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    confirmButtonText: 'Yes, delete it!',
+    cancelButtonText: 'Cancel'
+  })
 
+  if (result.isConfirmed) {
     try {
-      const token = localStorage.getItem("token"); // Changed from "user-token"
-      const loadingToast = toast.loading("Deleting assignment...");
-      
+      const token = localStorage.getItem("token")
+      const loadingToast = toast.loading("Deleting assignment...")
+
       const res = await fetch(`http://localhost:5000/api/assignments/${id}`, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      
-      toast.dismiss(loadingToast);
-      
+        headers: { Authorization: `Bearer ${token}` }
+      })
+
+      toast.dismiss(loadingToast)
+
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || "Failed to delete assignment");
+        const errorData = await res.json()
+        throw new Error(errorData.message || "Failed to delete assignment")
       }
-      
-      await res.json();
-      setAssignments((prev) => prev.filter((item) => item._id !== id));
-      toast.success("Assignment deleted successfully!");
+
+      await res.json()
+      setAssignments(prev => prev.filter(item => item._id !== id))
+
+      // 2) Show success
+      await Swal.fire('Deleted!', 'Your assignment has been deleted.', 'success')
     } catch (error: any) {
-      console.error("Error deleting assignment:", error);
-      toast.error(error.message || "Failed to delete assignment");
+      console.error("Error deleting assignment:", error)
+      // 3) Show error
+      await Swal.fire('Error', error.message || 'Failed to delete assignment', 'error')
+      toast.error(error.message || "Failed to delete assignment")
     }
-  };
+  } else {
+    // optional: on cancel
+    await Swal.fire('Cancelled', 'Your assignment is safe :)', 'info')
+  }
+}
+
 
   const openCreateForm = () => {
     setIsEditMode(false);

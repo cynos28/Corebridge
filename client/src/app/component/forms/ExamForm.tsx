@@ -22,7 +22,11 @@ const ExamForm: React.FC<ExamFormProps> = ({ onClose, onSubmit, editData }) => {
   const [className, setClassName] = useState("");
   const [teacher, setTeacher] = useState("");
   const [date, setDate] = useState("");
+
   const [subjectError, setSubjectError] = useState("");
+  const [classError, setClassError] = useState("");
+  const [teacherError, setTeacherError] = useState("");
+  const [dateError, setDateError] = useState("");
 
   useEffect(() => {
     if (editData) {
@@ -33,28 +37,84 @@ const ExamForm: React.FC<ExamFormProps> = ({ onClose, onSubmit, editData }) => {
     }
   }, [editData]);
 
+  // Subject change with live validation
   const handleSubjectChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value;
     const regex = /^[A-Za-z\s]*$/;
-
     if (regex.test(input)) {
       setSubject(input);
       setSubjectError("");
     } else {
       setSubject(input);
-      setSubjectError("Subject name should not contain numbers or symbols.");
+      setSubjectError("Subject name should only contain letters and spaces.");
+    }
+  };
+
+  // Class change with live validation (format: 1-13 dash letter)
+  const handleClassChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target.value;
+    const regex = /^(1[0-3]|[1-9])-[A-Za-z]$/;
+    if (input === "" || regex.test(input)) {
+      setClassName(input);
+      setClassError("");
+    } else {
+      setClassName(input);
+      setClassError("Class must be between 1–13, a dash, and a letter (e.g., 10-A).");
+    }
+  };
+
+  // Teacher change with live validation
+  const handleTeacherChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target.value;
+    const regex = /^[A-Za-z\s]*$/;
+    if (regex.test(input)) {
+      setTeacher(input);
+      setTeacherError("");
+    } else {
+      setTeacher(input);
+      setTeacherError("Teacher name should only contain letters and spaces.");
     }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Final check before submission
-    const regex = /^[A-Za-z\s]+$/;
-    if (!regex.test(subject)) {
+    // Final validations
+    const nameRegex = /^[A-Za-z\s]+$/;
+    const classRegex = /^(1[0-3]|[1-9])-[A-Za-z]$/;
+
+    let valid = true;
+
+    if (!nameRegex.test(subject)) {
       setSubjectError("Subject name must contain only letters and spaces.");
-      return;
+      valid = false;
     }
+
+    if (!classRegex.test(className)) {
+      setClassError("Class must be between 1–13, a dash, and a letter (e.g., 10-A).");
+      valid = false;
+    }
+
+    if (!nameRegex.test(teacher)) {
+      setTeacherError("Teacher name must contain only letters and spaces.");
+      valid = false;
+    }
+
+    const selectedDate = new Date(date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (selectedDate < today) {
+      setDateError("Date cannot be in the past.");
+      valid = false;
+    }
+
+    if (!valid) return;
+
+    // Clear errors
+    setSubjectError("");
+    setClassError("");
+    setTeacherError("");
+    setDateError("");
 
     const formData = new FormData();
     formData.append("subject", subject);
@@ -63,6 +123,9 @@ const ExamForm: React.FC<ExamFormProps> = ({ onClose, onSubmit, editData }) => {
     formData.append("date", date);
     onSubmit(formData);
   };
+
+  // For date min attribute
+  const todayStr = new Date().toISOString().split("T")[0];
 
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -94,22 +157,28 @@ const ExamForm: React.FC<ExamFormProps> = ({ onClose, onSubmit, editData }) => {
                 id="class"
                 type="text"
                 value={className}
-                onChange={(e) => setClassName(e.target.value)}
-                placeholder="e.g., 10A"
+                onChange={handleClassChange}
+                placeholder="e.g., 10-A"
                 required
               />
+              {classError && (
+                <p className="text-red-500 text-sm mt-1">{classError}</p>
+              )}
             </div>
           </div>
           <div>
             <Label htmlFor="teacher">Teacher</Label>
             <Input
               id="teacher"
-              type="text"
-              value={teacher}
-              onChange={(e) => setTeacher(e.target.value)}
-              placeholder="e.g., Mr. Smith"
-              required
+                type="text"
+                value={teacher}
+                onChange={handleTeacherChange}
+                placeholder="e.g., Mr Smith"
+                required
             />
+            {teacherError && (
+              <p className="text-red-500 text-sm mt-1">{teacherError}</p>
+            )}
           </div>
           <div>
             <Label htmlFor="date">Due Date</Label>
@@ -118,8 +187,12 @@ const ExamForm: React.FC<ExamFormProps> = ({ onClose, onSubmit, editData }) => {
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
+              min={todayStr}
               required
             />
+            {dateError && (
+              <p className="text-red-500 text-sm mt-1">{dateError}</p>
+            )}
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
             <Button variant="outline" type="button" onClick={onClose}>

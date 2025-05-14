@@ -12,6 +12,8 @@ import html2canvas from "html2canvas";
 import { HiDocumentArrowDown } from "react-icons/hi2";
 import { HiOutlinePencilSquare } from "react-icons/hi2";
 import { HiMiniArchiveBoxXMark } from "react-icons/hi2";
+import Swal from 'sweetalert2';
+
 
 
 import { examsData, role } from "@/lib/data"; // If you have static sample data; otherwise, fetch from your server
@@ -83,25 +85,39 @@ const ExamListPage = () => {
   };
 
   const handleDeleteExam = async (id: string) => {
+  const result = await Swal.fire({
+    title: 'Are you sure?',
+    text: "This exam will be permanently deleted.",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    confirmButtonText: 'Yes, delete it!',
+  });
 
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this result?"
+  if (!result.isConfirmed) {
+    return;
+  }
+
+  try {
+    const res = await fetch(`http://localhost:5000/api/exams/${id}`, {
+      method: "DELETE",
+    });
+    if (!res.ok) throw new Error("Failed to delete exam");
+
+    setExams((prev) => prev.filter((item) => item._id !== id));
+
+    await Swal.fire(
+      'Deleted!',
+      'The exam has been deleted.',
+      'success'
     );
-    if (!confirmDelete) {
-      return;
-    }
+  } catch (error) {
+    console.error("Error deleting exam:", error);
+    Swal.fire('Error', 'Failed to delete the exam.', 'error');
+  }
+};
 
-    try {
-      const res = await fetch(`http://localhost:5000/api/exams/${id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) throw new Error("Failed to delete exam");
-      await res.json();
-      setExams((prev) => prev.filter((item) => item._id !== id));
-    } catch (error) {
-      console.error("Error deleting exam:", error);
-    }
-  };
 
   
 
