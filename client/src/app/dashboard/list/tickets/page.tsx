@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { jsPDF } from "jspdf";
-import 'jspdf-autotable';
+import "jspdf-autotable";
 import html2canvas from "html2canvas";
 import { MdDelete } from "react-icons/md";
 
@@ -25,6 +25,12 @@ const TicketsPage = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editTicket, setEditTicket] = useState<Ticket | null>(null);
+  const [role, setRole] = useState<string>("");
+
+  useEffect(() => {
+    const storedRole = localStorage.getItem("user-role"); // Or however you store it
+    if (storedRole) setRole(storedRole);
+  }, []);
 
   useEffect(() => {
     fetchTickets();
@@ -100,36 +106,38 @@ const TicketsPage = () => {
   const generateTicketPDF = (ticket: Ticket) => {
     // Create a new PDF document
     const doc = new jsPDF();
-    
+
     // Add title
     doc.setFontSize(20);
     doc.setTextColor(44, 62, 80);
-    doc.text("Support Ticket Details", 105, 20, { align: 'center' });
-    
+    doc.text("Support Ticket Details", 105, 20, { align: "center" });
+
     // Add school logo/header
     doc.setFontSize(14);
     doc.setTextColor(52, 73, 94);
-    doc.text("Corebridge Education System", 105, 30, { align: 'center' });
-    
+    doc.text("Corebridge Education System", 105, 30, { align: "center" });
+
     // Add date
     doc.setFontSize(10);
     doc.setTextColor(100, 100, 100);
     const today = new Date();
-    doc.text(`Generated on: ${today.toLocaleDateString()}`, 105, 40, { align: 'center' });
-    
+    doc.text(`Generated on: ${today.toLocaleDateString()}`, 105, 40, {
+      align: "center",
+    });
+
     // Add ticket information
     doc.setFontSize(12);
     doc.setTextColor(0, 0, 0);
-    
+
     // Define y coordinate starting point for ticket details
     let y = 60;
-    
+
     // Add ticket ID if available
     if (ticket._id) {
       doc.text(`Ticket ID: ${ticket._id}`, 20, y);
       y += 10;
     }
-    
+
     // Add other ticket details
     doc.text(`Student Name: ${ticket.studentName}`, 20, y);
     y += 10;
@@ -137,20 +145,25 @@ const TicketsPage = () => {
     y += 10;
     doc.text(`Issue: ${ticket.issue}`, 20, y);
     y += 10;
-    
+
     // Add description with word wrap
     doc.text("Description:", 20, y);
     y += 10;
-    
+
     // Split description into multiple lines if needed
     const splitDescription = doc.splitTextToSize(ticket.description, 170);
     doc.text(splitDescription, 20, y);
-    
+
     // Add footer
     doc.setFontSize(10);
     doc.setTextColor(100, 100, 100);
-    doc.text("This is an official document from Corebridge Education System", 105, 280, { align: 'center' });
-    
+    doc.text(
+      "This is an official document from Corebridge Education System",
+      105,
+      280,
+      { align: "center" }
+    );
+
     // Save the PDF
     doc.save(`ticket_${ticket._id || Date.now()}.pdf`);
   };
@@ -196,20 +209,25 @@ const TicketsPage = () => {
                 <td className="px-6 py-4 whitespace-nowrap">{ticket.issue}</td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex gap-2">
-                    <button
-                      onClick={() => openEditForm(ticket)}
-                      className="w-9 h-9 flex items-center justify-center rounded-full bg-blue-500 text-white hover:bg-blue-600 transition"
-                      title="Edit"
-                    >
-                      ✎
-                    </button>
-                    <button
-                      onClick={() => handleDeleteTicket(ticket._id!)}
-                      className="w-9 h-9 flex items-center justify-center rounded-full bg-red-400 text-white hover:bg-red-600 transition"
-                      title="Delete"
-                    >
-                     <MdDelete />
-                    </button>
+                    {role === "student" && (
+                      <>
+                        <button
+                          onClick={() => openEditForm(ticket)}
+                          className="w-9 h-9 flex items-center justify-center rounded-full bg-blue-500 text-white hover:bg-blue-600 transition"
+                          title="Edit"
+                        >
+                          ✎
+                        </button>
+                        <button
+                          onClick={() => handleDeleteTicket(ticket._id!)}
+                          className="w-9 h-9 flex items-center justify-center rounded-full bg-red-400 text-white hover:bg-red-600 transition"
+                          title="Delete"
+                        >
+                          <MdDelete />
+                        </button>
+                      </>
+                    )}
+
                     <button
                       onClick={() => generateTicketPDF(ticket)}
                       className="w-9 h-9 flex items-center justify-center rounded-full bg-green-500 text-white hover:bg-green-600 transition"

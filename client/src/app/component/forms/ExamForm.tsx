@@ -5,8 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-
-
 interface ExamFormProps {
   onClose: () => void;
   onSubmit: (formData: FormData) => void;
@@ -24,6 +22,7 @@ const ExamForm: React.FC<ExamFormProps> = ({ onClose, onSubmit, editData }) => {
   const [className, setClassName] = useState("");
   const [teacher, setTeacher] = useState("");
   const [date, setDate] = useState("");
+  const [subjectError, setSubjectError] = useState("");
 
   useEffect(() => {
     if (editData) {
@@ -34,8 +33,29 @@ const ExamForm: React.FC<ExamFormProps> = ({ onClose, onSubmit, editData }) => {
     }
   }, [editData]);
 
+  const handleSubjectChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target.value;
+    const regex = /^[A-Za-z\s]*$/;
+
+    if (regex.test(input)) {
+      setSubject(input);
+      setSubjectError("");
+    } else {
+      setSubject(input);
+      setSubjectError("Subject name should not contain numbers or symbols.");
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Final check before submission
+    const regex = /^[A-Za-z\s]+$/;
+    if (!regex.test(subject)) {
+      setSubjectError("Subject name must contain only letters and spaces.");
+      return;
+    }
+
     const formData = new FormData();
     formData.append("subject", subject);
     formData.append("class", className);
@@ -60,10 +80,13 @@ const ExamForm: React.FC<ExamFormProps> = ({ onClose, onSubmit, editData }) => {
                 id="subject"
                 type="text"
                 value={subject}
-                onChange={(e) => setSubject(e.target.value)}
+                onChange={handleSubjectChange}
                 placeholder="e.g., Mathematics"
                 required
               />
+              {subjectError && (
+                <p className="text-red-500 text-sm mt-1">{subjectError}</p>
+              )}
             </div>
             <div>
               <Label htmlFor="class">Class</Label>
