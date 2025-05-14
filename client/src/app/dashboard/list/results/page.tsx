@@ -15,6 +15,9 @@ import { HiOutlinePencilSquare } from "react-icons/hi2";
 import { HiMiniArchiveBoxXMark } from "react-icons/hi2";
 import CustomReport from "@/app/component/CustomReport";
 import { HiMiniXCircle } from "react-icons/hi2";
+import Swal from 'sweetalert2';
+
+
 
 // Define the Result type
 type Result = {
@@ -105,22 +108,43 @@ const ResultListPage = () => {
   };
 
   const handleDeleteResult = async (id: string) => {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this result?"
-    );
-    if (!confirmDelete) return;
+  // 1) Ask for confirmation
+  const result = await Swal.fire({
+    title: 'Are you sure?',
+    text: 'This result will be permanently deleted!',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    confirmButtonText: 'Yes, delete it!',
+    cancelButtonText: 'Cancel'
+  });
 
-    try {
-      const res = await fetch(`http://localhost:5000/api/results/${id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) throw new Error("Failed to delete result");
-      await res.json();
-      setResults((prev) => prev.filter((item) => item._id !== id));
-    } catch (error) {
-      console.error("Error deleting result:", error);
-    }
-  };
+  if (!result.isConfirmed) {
+    // user cancelled
+    await Swal.fire('Cancelled', 'Your result is safe :)', 'info');
+    return;
+  }
+
+  try {
+    const res = await fetch(`http://localhost:5000/api/results/${id}`, {
+      method: 'DELETE',
+    });
+
+    if (!res.ok) throw new Error('Failed to delete result');
+    await res.json();
+
+    setResults(prev => prev.filter(item => item._id !== id));
+
+    // 2) Show success
+    await Swal.fire('Deleted!', 'Your result has been deleted.', 'success');
+  } catch (error: any) {
+    console.error('Error deleting result:', error);
+    // 3) Show error
+    await Swal.fire('Error', error.message || 'Failed to delete result', 'error');
+  }
+}
+
 
   const openCreateForm = () => {
     setIsEditMode(false);
