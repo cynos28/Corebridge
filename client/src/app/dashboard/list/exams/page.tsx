@@ -12,6 +12,9 @@ import html2canvas from "html2canvas";
 import { HiDocumentArrowDown } from "react-icons/hi2";
 import { HiOutlinePencilSquare } from "react-icons/hi2";
 import { HiMiniArchiveBoxXMark } from "react-icons/hi2";
+import Swal from 'sweetalert2';
+
+
 
 import { examsData, role } from "@/lib/data"; // If you have static sample data; otherwise, fetch from your server
 
@@ -82,52 +85,58 @@ const ExamListPage = () => {
   };
 
   const handleDeleteExam = async (id: string) => {
+  const result = await Swal.fire({
+    title: 'Are you sure?',
+    text: "This exam will be permanently deleted.",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    confirmButtonText: 'Yes, delete it!',
+  });
 
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this result?"
+  if (!result.isConfirmed) {
+    return;
+  }
+
+  try {
+    const res = await fetch(`http://localhost:5000/api/exams/${id}`, {
+      method: "DELETE",
+    });
+    if (!res.ok) throw new Error("Failed to delete exam");
+
+    setExams((prev) => prev.filter((item) => item._id !== id));
+
+    await Swal.fire(
+      'Deleted!',
+      'The exam has been deleted.',
+      'success'
     );
-    if (!confirmDelete) {
-      return;
-    }
+  } catch (error) {
+    console.error("Error deleting exam:", error);
+    Swal.fire('Error', 'Failed to delete the exam.', 'error');
+  }
+};
 
-    try {
-      const res = await fetch(`http://localhost:5000/api/exams/${id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) throw new Error("Failed to delete exam");
-      await res.json();
-      setExams((prev) => prev.filter((item) => item._id !== id));
-    } catch (error) {
-      console.error("Error deleting exam:", error);
-    }
-  };
+
+  
 
   const handleDownloadExam = async (exam: Exam) => {
     try {
-      // Create exam details content
-      const content = `
-        Exam Details
-        ============
-        Subject: ${exam.subject}
-        Class: ${exam.class}
-        Teacher: ${exam.teacher}
-        Date: ${new Date(exam.date).toLocaleDateString()}
-      `;
-
-      // Create blob and download
-      const blob = new Blob([content], { type: 'text/plain' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `exam-${exam.subject}.txt`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
+      const doc = new jsPDF();
+      doc.setFontSize(16);
+      doc.text("Exam Details", 10, 10);
+      doc.setFontSize(12);
+      doc.text(`Subject: ${exam.subject}`, 10, 20);
+      doc.text(`Class: ${exam.class}`, 10, 30);
+      doc.text(`Teacher: ${exam.teacher}`, 10, 40);
+      doc.text(`Date: ${new Date(exam.date).toLocaleDateString()}`, 10, 50);
+      doc.save(`exam-${exam.subject}.pdf`);
     } catch (error) {
-      console.error('Error downloading exam:', error);
+      console.error("Error downloading PDF:", error);
     }
   };
+
 
   const openCreateForm = () => {
     setIsEditMode(false);

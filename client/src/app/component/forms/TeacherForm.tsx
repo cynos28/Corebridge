@@ -6,18 +6,39 @@ import { z } from "zod";
 import InputField from "../InputField";
 import Image from "next/image";
 import { useState, useRef } from "react";
-import { useRouter } from 'next/navigation';
+import { useRouter } from "next/navigation";
 
 const schema = z.object({
-  username: z.string().min(3, "Username must be at least 3 characters"),
+  username: z
+    .string()
+    .min(3, "Username must be at least 3 characters")
+    .regex(/^[A-Za-z]+$/, "Username may only contain letters"),
   email: z.string().email("Invalid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters").optional(),
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  phone: z.string().min(1, "Phone number is required"),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .optional(),
+  firstName: z
+    .string()
+    .min(1, "First name is required")
+    .regex(/^[A-Za-z]+$/, "First name may only contain letters"),
+  lastName: z
+    .string()
+    .min(1, "Last name is required")
+    .regex(/^[A-Za-z]+$/, "Last name may only contain letters"),
+  phone: z
+    .string()
+    .regex(/^\d{10}$/, "Phone must be exactly 10 digits"),
   address: z.string().min(1, "Address is required"),
   bloodType: z.string().min(1, "Blood type is required"),
-  birthday: z.string().min(1, "Birthday is required"),
+  birthday: z
+    .string()
+    .refine((val) => {
+      const d = new Date(val);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return d < today;
+    }, { message: "Birthday must be a past date" }),
   sex: z.enum(["male", "female"], {
     required_error: "Sex is required",
   }),
@@ -80,57 +101,40 @@ const TeacherForm = ({ type, data, onSuccess, onClose }: TeacherFormProps) => {
     try {
       setIsLoading(true);
       setError("");
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("No authentication token found");
 
       const submitFormData = new FormData();
-      
-      // Add form fields
       for (const [key, value] of Object.entries(formData)) {
-        // Skip empty values, password in update mode, and subjects (handled separately)
-        if (value && key !== 'subjects' && !(type === 'update' && key === 'password')) {
+        if (value && key !== "subjects" && !(type === "update" && key === "password")) {
           submitFormData.append(key, value.toString());
         }
       }
-
-      // Handle subjects array
-      subjects.forEach(subject => {
-        submitFormData.append('subjects[]', subject);
+      subjects.forEach((subject) => {
+        submitFormData.append("subjects[]", subject);
       });
-
-      // Handle image upload
       if (selectedImage) {
-        submitFormData.append('photo', selectedImage);
+        submitFormData.append("photo", selectedImage);
       }
 
-      const url = "http://localhost:5000/api/teachers" + (type === "update" && data?._id ? `/${data._id}` : "");
-      
+      const url =
+        "http://localhost:5000/api/teachers" +
+        (type === "update" && data?._id ? `/${data._id}` : "");
       const response = await fetch(url, {
         method: type === "create" ? "POST" : "PUT",
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: submitFormData
+        headers: { Authorization: `Bearer ${token}` },
+        body: submitFormData,
       });
 
-      if (response.status === 401) {
-        throw new Error('Unauthorized. Please log in again.');
-      }
-
+      if (response.status === 401) throw new Error("Unauthorized. Please log in again.");
       const responseData = await response.json();
+      if (!response.ok) throw new Error(responseData.message || "Failed to submit form");
 
-      if (!response.ok) {
-        throw new Error(responseData.message || 'Failed to submit form');
-      }
-
-      if (onSuccess) await onSuccess();
-      if (onClose) onClose();
-
-    } catch (error) {
-      console.error('Error submitting form:', error);
-      setError(error instanceof Error ? error.message : "Failed to submit form");
+      onSuccess && (await onSuccess());
+      onClose && onClose();
+    } catch (err) {
+      console.error("Error submitting form:", err);
+      setError(err instanceof Error ? err.message : "Failed to submit form");
     } finally {
       setIsLoading(false);
     }
@@ -153,6 +157,7 @@ const TeacherForm = ({ type, data, onSuccess, onClose }: TeacherFormProps) => {
         <div className="md:col-span-2 space-y-4">
           <h2 className="text-sm font-medium text-purple-700">Authentication</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Username */}
             <div className="flex flex-col gap-2">
               <label className="text-sm text-gray-600">Username</label>
               <input
@@ -164,6 +169,7 @@ const TeacherForm = ({ type, data, onSuccess, onClose }: TeacherFormProps) => {
                 <span className="text-xs text-red-500">{errors.username.message}</span>
               )}
             </div>
+            {/* Email */}
             <div className="flex flex-col gap-2">
               <label className="text-sm text-gray-600">Email</label>
               <input
@@ -175,6 +181,7 @@ const TeacherForm = ({ type, data, onSuccess, onClose }: TeacherFormProps) => {
                 <span className="text-xs text-red-500">{errors.email.message}</span>
               )}
             </div>
+            {/* Password (create only) */}
             {type === "create" && (
               <div className="flex flex-col gap-2">
                 <label className="text-sm text-gray-600">Password</label>
@@ -195,6 +202,7 @@ const TeacherForm = ({ type, data, onSuccess, onClose }: TeacherFormProps) => {
         <div className="md:col-span-2 space-y-4">
           <h2 className="text-sm font-medium text-purple-700">Personal Information</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* First Name */}
             <div className="flex flex-col gap-2">
               <label className="text-sm text-gray-600">First Name</label>
               <input
@@ -206,6 +214,7 @@ const TeacherForm = ({ type, data, onSuccess, onClose }: TeacherFormProps) => {
                 <span className="text-xs text-red-500">{errors.firstName.message}</span>
               )}
             </div>
+            {/* Last Name */}
             <div className="flex flex-col gap-2">
               <label className="text-sm text-gray-600">Last Name</label>
               <input
@@ -217,6 +226,7 @@ const TeacherForm = ({ type, data, onSuccess, onClose }: TeacherFormProps) => {
                 <span className="text-xs text-red-500">{errors.lastName.message}</span>
               )}
             </div>
+            {/* Phone */}
             <div className="flex flex-col gap-2">
               <label className="text-sm text-gray-600">Phone</label>
               <input
@@ -228,6 +238,7 @@ const TeacherForm = ({ type, data, onSuccess, onClose }: TeacherFormProps) => {
                 <span className="text-xs text-red-500">{errors.phone.message}</span>
               )}
             </div>
+            {/* Address */}
             <div className="flex flex-col gap-2">
               <label className="text-sm text-gray-600">Address</label>
               <input
@@ -239,6 +250,7 @@ const TeacherForm = ({ type, data, onSuccess, onClose }: TeacherFormProps) => {
                 <span className="text-xs text-red-500">{errors.address.message}</span>
               )}
             </div>
+            {/* Blood Type */}
             <div className="flex flex-col gap-2">
               <label className="text-sm text-gray-600">Blood Type</label>
               <select
@@ -246,26 +258,30 @@ const TeacherForm = ({ type, data, onSuccess, onClose }: TeacherFormProps) => {
                 className="ring-1 ring-purple-200 rounded-md p-2 focus:ring-2 focus:ring-purple-500"
               >
                 <option value="">Select Blood Type</option>
-                {bloodTypes.map(type => (
-                  <option key={type} value={type}>{type}</option>
+                {bloodTypes.map((bt) => (
+                  <option key={bt} value={bt}>
+                    {bt}
+                  </option>
                 ))}
               </select>
               {errors.bloodType && (
                 <span className="text-xs text-red-500">{errors.bloodType.message}</span>
               )}
             </div>
+            {/* Birthday */}
             <div className="flex flex-col gap-2">
               <label className="text-sm text-gray-600">Birthday</label>
               <input
                 type="date"
                 {...register("birthday")}
                 className="ring-1 ring-purple-200 rounded-md p-2 focus:ring-2 focus:ring-purple-500"
-                max={new Date().toISOString().split('T')[0]}
+                max={new Date().toISOString().split("T")[0]}
               />
               {errors.birthday && (
                 <span className="text-xs text-red-500">{errors.birthday.message}</span>
               )}
             </div>
+            {/* Sex */}
             <div className="flex flex-col gap-2">
               <label className="text-sm text-gray-600">Sex</label>
               <select
@@ -302,12 +318,12 @@ const TeacherForm = ({ type, data, onSuccess, onClose }: TeacherFormProps) => {
             </button>
           </div>
           <div className="flex flex-wrap gap-2">
-            {subjects.map((subject, index) => (
-              <div key={index} className="bg-purple-50 px-3 py-1 rounded-full flex items-center gap-2">
+            {subjects.map((subject, idx) => (
+              <div key={idx} className="bg-purple-50 px-3 py-1 rounded-full flex items-center gap-2">
                 <span className="text-purple-700">{subject}</span>
                 <button
                   type="button"
-                  onClick={() => removeSubject(index)}
+                  onClick={() => removeSubject(idx)}
                   className="text-purple-400 hover:text-red-500"
                 >
                   ×
@@ -317,14 +333,14 @@ const TeacherForm = ({ type, data, onSuccess, onClose }: TeacherFormProps) => {
           </div>
         </div>
 
-        {/* Image Upload Section */}
+        {/* Image Upload */}
         <div className="flex flex-col gap-2">
           <label className="text-sm text-gray-600">Profile Photo</label>
           <div className="flex items-center gap-4">
             <div className="relative w-24 h-24 border-2 border-dashed border-purple-200 rounded-lg overflow-hidden">
               {imagePreview || data?.photoUrl ? (
                 <Image
-                  src={imagePreview || data?.photoUrl}
+                  src={imagePreview || data.photoUrl}
                   alt="Preview"
                   fill
                   className="object-cover"
@@ -352,7 +368,7 @@ const TeacherForm = ({ type, data, onSuccess, onClose }: TeacherFormProps) => {
         </div>
       </div>
 
-      {/* Form Actions */}
+      {/* Actions */}
       <div className="flex justify-end gap-3 mt-6">
         <button
           type="button"
@@ -366,7 +382,11 @@ const TeacherForm = ({ type, data, onSuccess, onClose }: TeacherFormProps) => {
           disabled={isLoading}
           className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
         >
-          {isLoading ? "Processing..." : type === "create" ? "Create Teacher" : "Update Teacher"}
+          {isLoading
+            ? "Processing..."
+            : type === "create"
+            ? "Create Teacher"
+            : "Update Teacher"}
         </button>
       </div>
     </form>
