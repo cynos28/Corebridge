@@ -34,9 +34,8 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ onClose, onSubmit, edit
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      const allowed = ['application/pdf','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-      if (!allowed.includes(file.type)) {
-        setFileError('Please upload only PDF or Word documents');
+      if (file.type !== 'application/pdf') {
+        setFileError('Please upload only PDF documents');
         setDocumentFile(null);
         return;
       }
@@ -88,7 +87,12 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ onClose, onSubmit, edit
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Upload Document</label>
             <div className="relative">
-              <input type="file" onChange={handleFileChange} accept=".pdf,.doc,.docx" className="w-full file:py-2 file:px-4 file:rounded file:border-0 file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100" />
+              <input 
+                type="file" 
+                onChange={handleFileChange} 
+                accept=".pdf" 
+                className="w-full file:py-2 file:px-4 file:rounded file:border-0 file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100" 
+              />
               {fileError && <p className="text-red-500 text-sm mt-1">{fileError}</p>}
               {documentFile && !fileError && (<span className="text-sm text-gray-600 mt-1 block">Selected: {documentFile.name}</span>)}
             </div>
