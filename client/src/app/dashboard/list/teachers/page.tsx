@@ -13,6 +13,9 @@ import CustomTeacherReport from "@/app/component/CustomTeacherReport";
 import { HiDocumentArrowDown, HiMiniDocumentText } from "react-icons/hi2";
 import { HiMiniXCircle } from "react-icons/hi2"; // adjust path if needed
 
+import Swal from "sweetalert2";
+import "sweetalert2/dist/sweetalert2.min.css";
+
 // Define table columns. You can adjust the headers and classes as needed.
 const columns = [
   {
@@ -90,18 +93,39 @@ const TeacherListPage = () => {
 
       if (response.status === 401) {
         localStorage.removeItem("token");
-        // You may want to redirect to login page here
         return;
       }
-
       if (!response.ok) {
         throw new Error("Failed to delete teacher");
       }
 
-      await fetchTeachers(); // Refresh the list
+      await fetchTeachers(); // refresh your list
     } catch (error) {
       console.error("Error deleting teacher:", error);
+      throw error;
     }
+  };
+
+  const confirmDelete = (id: string) => {
+    Swal.fire({
+      title: "Are you sure?",
+      text: "This action cannot be undone!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "Cancel",
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await handleDelete(id);
+          Swal.fire("Deleted!", "Teacher has been deleted.", "success");
+        } catch (err: any) {
+          Swal.fire("Error", err.message || "Failed to delete.", "error");
+        }
+      }
+    });
   };
 
   const handleUpdate = async (id: string, updatedData: any) => {
@@ -361,13 +385,7 @@ const TeacherListPage = () => {
             </button>
           </FormModal>
           <button
-            onClick={() => {
-              if (
-                window.confirm("Are you sure you want to delete this teacher?")
-              ) {
-                handleDelete(teacher._id);
-              }
-            }}
+            onClick={() => confirmDelete(teacher._id)}
             className="w-full px-4 py-2 text-sm text-center text-red-600 bg-red-50 rounded-md hover:bg-red-100 transition-colors"
           >
             Delete
