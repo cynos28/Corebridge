@@ -1,4 +1,5 @@
 const Teacher = require('../models/Teacher');
+const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const fs = require('fs').promises;
 const path = require('path');
@@ -35,19 +36,13 @@ exports.getTeacher = async (req, res) => {
 // Create teacher
 exports.createTeacher = async (req, res) => {
   try {
-    // Check if username or email already exists
+    // Check existing teacher
     const existingTeacher = await Teacher.findOne({
-      $or: [
-        { username: req.body.username }, 
-        { email: req.body.email }
-      ]
+      $or: [{ username: req.body.username }, { email: req.body.email }]
     });
 
     if (existingTeacher) {
-      // If file was uploaded, delete it since we won't be using it
-      if (req.file) {
-        await fs.unlink(req.file.path).catch(console.error);
-      }
+      if (req.file) await fs.unlink(req.file.path).catch(console.error);
       return res.status(400).json({
         message: existingTeacher.username === req.body.username 
           ? 'Username already exists' 
@@ -55,63 +50,34 @@ exports.createTeacher = async (req, res) => {
       });
     }
 
-    // Hash password
+    // Create User first
     const hashedPassword = await bcrypt.hash(req.body.password, 10);
-    
-    // Process photo upload
-    let photoUrl;
-    if (req.file) {
-      photoUrl = `/uploads/teachers/${req.file.filename}`;
-    }
+    const user = new User({
+      email: req.body.email,
+      password: hashedPassword,
+      role: 'teacher',
+      name: `${req.body.firstName} ${req.body.lastName}`,
+      photoUrl: req.file ? `/uploads/teachers/${req.file.filename}` : undefined
+    });
+    await user.save();
 
-    // Handle subjects array
-    let subjects = [];
-    if (req.body['subjects[]']) {
-      subjects = Array.isArray(req.body['subjects[]']) 
-        ? req.body['subjects[]']
-        : [req.body['subjects[]']];
-    }
-
-    // Create teacher object
+    // Create teacher with user reference
     const teacherData = {
       ...req.body,
       password: hashedPassword,
-      subjects,
-      photoUrl,
-      birthday: new Date(req.body.birthday)
+      userId: user._id,
+      photoUrl: user.photoUrl,
+      subjects: req.body['subjects[]'] ? 
+        (Array.isArray(req.body['subjects[]']) ? req.body['subjects[]'] : [req.body['subjects[]']]) : []
     };
-
-    // Remove subjects[] from teacherData if it exists
     delete teacherData['subjects[]'];
 
-    let retries = 3;
-    let teacher;
-    let savedTeacher;
-
-    while (retries > 0) {
-      try {
-        teacher = new Teacher(teacherData);
-        savedTeacher = await teacher.save();
-        break; // If save successful, break the loop
-      } catch (error) {
-        if (error.code === 11000 && error.keyPattern.teacherId && retries > 1) {
-          // If duplicate teacherId and we have retries left, try again
-          retries--;
-          continue;
-        }
-        throw error; // Otherwise, throw the error
-      }
-    }
-
-    if (!savedTeacher) {
-      throw new Error('Failed to create teacher after multiple attempts');
-    }
-
-    // Return response without password
-    const teacherResponse = savedTeacher.toObject();
-    delete teacherResponse.password;
+    const teacher = await Teacher.create(teacherData);
     
-    res.status(201).json(teacherResponse);
+    const response = teacher.toObject();
+    delete response.password;
+    
+    res.status(201).json(response);
   } catch (error) {
     // If file was uploaded, delete it since save failed
     if (req.file) {

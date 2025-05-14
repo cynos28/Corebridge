@@ -7,15 +7,25 @@ const path = require('path');
 exports.createAssignment = async (req, res) => {
   try {
     const { subjectName, className, teacherName, dueDate } = req.body;
-    let documentFile = '';
-    if (req.file) documentFile = req.file.filename;
+    let documentPath = '';
+    
+    if (req.file) {
+      // Store the complete path for the document
+      documentPath = `/uploads/${req.file.filename}`;
+      
+      // Move file to permanent storage
+      const targetDir = path.join(__dirname, '../uploads');
+      if (!fs.existsSync(targetDir)) {
+        fs.mkdirSync(targetDir, { recursive: true });
+      }
+    }
 
     const assignment = await Assignment.create({
       subjectName,
       className,
       teacherName,
       dueDate,
-      document: documentFile
+      document: documentPath // Store the complete path
     });
     res.status(201).json(assignment);
   } catch (error) {
@@ -78,7 +88,7 @@ exports.updateAssignment = async (req, res) => {
         const oldPath = path.join(__dirname, '../uploads', old.document);
         if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
       }
-      updateData.document = req.file.filename;
+      updateData.document = `/uploads/${req.file.filename}`;
     }
     const assignment = await Assignment.findByIdAndUpdate(req.params.id, updateData, { new: true });
     if (!assignment) return res.status(404).json({ message: 'Assignment not found' });
@@ -95,7 +105,7 @@ exports.deleteAssignment = async (req, res) => {
     const assignment = await Assignment.findById(req.params.id);
     if (!assignment) return res.status(404).json({ message: 'Assignment not found' });
     if (assignment.document) {
-      const f = path.join(__dirname, '../uploads', assignment.document);
+      const f = path.join(__dirname, '..', assignment.document);
       if (fs.existsSync(f)) fs.unlinkSync(f);
     }
     for (const sub of assignment.submissions) {
@@ -113,11 +123,25 @@ exports.deleteAssignment = async (req, res) => {
 // Download assignment document
 exports.downloadAssignment = async (req, res) => {
   try {
-    const a = await Assignment.findById(req.params.id);
-    if (!a || !a.document) return res.status(404).json({ message: 'Document not found' });
-    const f = path.join(__dirname, '../uploads', a.document);
-    if (!fs.existsSync(f)) return res.status(404).json({ message: 'File not found on server' });
-    res.download(f);
+    const assignment = await Assignment.findById(req.params.id);
+    if (!assignment || !assignment.document) {
+      return res.status(404).json({ message: 'Document not found' });
+    }
+
+    // Construct the absolute file path
+    const filePath = path.join(__dirname, '..', assignment.document);
+    
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ message: 'File not found on server' });
+    }
+
+    // Set content disposition and type
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=${path.basename(assignment.document)}`);
+
+    // Stream the file
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
   } catch (error) {
     console.error('Error downloading document:', error);
     res.status(500).json({ message: 'Error downloading document', error: error.message });
@@ -198,20 +222,38 @@ exports.submitAssignment = async (req, res) => {
 exports.downloadSubmission = async (req, res) => {
   try {
     const assignment = await Assignment.findById(req.params.id);
-    if (!assignment) return res.status(404).json({ message: 'Assignment not found' });
+    if (!assignment) {
+      return res.status(404).json({ message: 'Assignment not found' });
+    }
+
     let submission;
     if (req.user.role === 'student') {
-      submission = assignment.submissions.find(sub => sub.student.toString() === req.user.userId);
+      submission = assignment.submissions.find(sub => 
+        sub.student.toString() === req.user.userId
+      );
     } else {
       const { submissionId } = req.query;
       submission = submissionId
         ? assignment.submissions.find(sub => sub._id.toString() === submissionId)
         : assignment.submissions[0];
     }
-    if (!submission || !submission.filePath) return res.status(404).json({ message: 'Submission not found' });
-    const f = path.join(__dirname, '../uploads/submissions', submission.filePath);
-    if (!fs.existsSync(f)) return res.status(404).json({ message: 'File not found on server' });
-    res.download(f);
+
+    if (!submission || !submission.filePath) {
+      return res.status(404).json({ message: 'Submission not found' });
+    }
+
+    const filePath = path.join(__dirname, '../uploads/submissions', submission.filePath);
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ message: 'File not found on server' });
+    }
+
+    // Set the appropriate headers
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=${submission.filePath}`);
+    
+    // Stream the file
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
   } catch (error) {
     console.error('Error downloading submission:', error);
     res.status(500).json({ message: 'Error downloading submission', error: error.message });
