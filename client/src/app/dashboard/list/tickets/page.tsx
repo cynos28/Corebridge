@@ -5,6 +5,7 @@ import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import html2canvas from "html2canvas";
 import { MdDelete } from "react-icons/md";
+import Swal from 'sweetalert2';
 
 
 interface TicketFormProps {
@@ -79,16 +80,35 @@ const TicketsPage = () => {
   };
 
   const handleDeleteTicket = async (id: string) => {
-    try {
-      const confirmDelete = window.confirm("Are you sure you want to delete this ticket? This action cannot be undone."); // ✅ Confirmation
-      if (!confirmDelete) return;
+  const result = await Swal.fire({
+    title: 'Are you sure?',
+    text: "This action cannot be undone!",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    confirmButtonText: 'Yes, delete it!',
+  });
 
-      await fetch(`http://localhost:5000/api/tickets/${id}`, { method: "DELETE" });
-      setTickets(tickets.filter((t) => t._id !== id)); // ✅ Remove from state
+  if (result.isConfirmed) {
+    try {
+      await fetch(`http://localhost:5000/api/tickets/${id}`, {
+        method: "DELETE",
+      });
+
+      setTickets((prev) => prev.filter((t) => t._id !== id)); // ✅ Remove from UI
+
+      await Swal.fire(
+        'Deleted!',
+        'The ticket has been successfully deleted.',
+        'success'
+      );
     } catch (error) {
       console.error("Error deleting ticket:", error);
+      Swal.fire('Error!', 'Something went wrong while deleting.', 'error');
     }
-  };
+  }
+};
 
   const openEditForm = (ticket: Ticket) => {
     setEditTicket(ticket); // 🔧 Set ticket to be edited
