@@ -436,7 +436,7 @@ export default function VoiceCard() {
       let dateResponse;
       do {
         dateResponse = await askVoiceQuestion(
-          'What is the meeting date? You can say a date like 20250325 for March 25, 2025.'
+          'What is the meeting date?'
         );
         dateResponse = processDateInput(dateResponse);
       } while (!isValidDate(dateResponse));
